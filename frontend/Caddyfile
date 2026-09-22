@@ -1,3 +1,14 @@
+# Trust X-Forwarded-* from the edge proxy and Anubis in front of this
+# container (both on the private Docker network). Without this, Caddy
+# replaces X-Forwarded-Proto with "http" - the scheme of its own hop -
+# and Django (plus the OIDC issuer it advertises) thinks every request
+# is plain HTTP.
+{
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
 :80 {
 	encode gzip
 
