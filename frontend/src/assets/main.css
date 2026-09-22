@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+@plugin 'daisyui';
+
+@plugin 'daisyui/theme' {
+  name: 'govex';
+  default: true;
+
+  --color-primary: #804da3;
+  --color-primary-content: #ffffff;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'dark';
+  prefersdark: true;
+
+  --color-primary: #804da3;
+  --color-primary-content: #ffffff;
+}
+
+@theme {
+  --color-govex-slate: #6c829c;
+  --color-govex-border: #e3e5e8;
+}
+
+[data-theme='dark'] {
+  --color-govex-slate: #a7b6c8;
+  --color-govex-border: #3a3f4a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-govex-slate: #a7b6c8;
+    --color-govex-border: #3a3f4a;
+  }
+}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>govex — Zugriff erlauben</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 0.75rem;
+      padding: 2rem;
+      max-width: 24rem;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    h1 { font-size: 1.125rem; margin: 0 0 0.5rem; }
+    p { color: #94a3b8; font-size: 0.9rem; line-height: 1.4; }
+    .scopes { margin: 1rem 0; padding-left: 1.25rem; color: #cbd5e1; font-size: 0.875rem; }
+    .actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+    button {
+      flex: 1;
+      padding: 0.625rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #334155;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    button[name="allow"] { background: #6366f1; color: #fff; border-color: #6366f1; }
+    button:not([name="allow"]) { background: transparent; color: #e2e8f0; }
+    .errorlist { color: #f87171; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>{{ application.name }} möchte auf dein govex-Konto zugreifen</h1>
+    <p>Angemeldet als <strong>{{ request.user.username }}</strong>. Diese App erhält Zugriff auf:</p>
+    <ul class="scopes">
+      {% for scope in scopes_descriptions %}
+        <li>{{ scope }}</li>
+      {% endfor %}
+    </ul>
+    {% if form.errors %}
+      <p class="errorlist">{{ form.errors }}</p>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        {% if field.is_hidden %}{{ field }}{% endif %}
+      {% endfor %}
+      <div class="actions">
+        <button type="submit" name="allow" value="true">Erlauben</button>
+        <button type="submit" name="cancel" value>Abbrechen</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
