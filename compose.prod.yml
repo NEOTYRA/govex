@@ -25,8 +25,9 @@ services:
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: "false"
-      DJANGO_ALLOWED_HOSTS: ${DOMAIN},backend,localhost
-      DJANGO_CSRF_TRUSTED_ORIGINS: https://${DOMAIN}
+      DJANGO_ALLOWED_HOSTS: ${DOMAIN},${ACCOUNT_DOMAIN},backend,localhost
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://${DOMAIN},https://${ACCOUNT_DOMAIN}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
       OIDC_RSA_PRIVATE_KEY: ${OIDC_RSA_PRIVATE_KEY}
       FRONTEND_LOGIN_URL: https://${DOMAIN}/login
       DB_NAME: ${DB_NAME}
@@ -72,7 +73,7 @@ services:
       TARGET: "http://origin:80"
       METRICS_BIND: ":9090"
       SERVE_ROBOTS_TXT: "true"
-      COOKIE_DOMAIN: ${DOMAIN}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
 
     depends_on:
       - origin
@@ -90,6 +91,7 @@ services:
 
     environment:
       DOMAIN: ${DOMAIN}
+      ACCOUNT_DOMAIN: ${ACCOUNT_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL}
 
     volumes:

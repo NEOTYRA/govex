@@ -2,7 +2,7 @@
 	email {$ACME_EMAIL}
 }
 
-{$DOMAIN} {
+{$DOMAIN}, {$ACCOUNT_DOMAIN} {
 	reverse_proxy anubis:3000 {
 		header_up X-Real-IP {remote_host}
 		header_up X-Http-Version {http.request.proto}

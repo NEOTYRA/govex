@@ -85,6 +85,11 @@ SESSION_COOKIE_SECURE = not DEBUG
 # each other's `sessionid` cookie mid-login.
 SESSION_COOKIE_NAME = "govex_sessionid"
 CSRF_COOKIE_SECURE = not DEBUG
+# In production govex answers on two subdomains (auth.* for the OIDC flow,
+# account.* for account management). Scoping both cookies to the parent
+# domain keeps a single login valid on both.
+SESSION_COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN") or None
+CSRF_COOKIE_DOMAIN = SESSION_COOKIE_DOMAIN
 
 
 # Application definition

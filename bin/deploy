@@ -7,7 +7,7 @@
 # effectively instant.
 #
 # Usage: ./deploy (run from the same directory as compose.prod.yml,
-# e.g. /opt/wintersehn on the server)
+# e.g. /opt/govex on the server)
 #
 # Requirements: docker compose, the backend service in
 # compose.prod.yml must have a healthcheck configured.
