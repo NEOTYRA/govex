@@ -16,6 +16,7 @@ cd "$(dirname "$0")/.."
 DOCKER_USER="buechijonas"
 BACKEND_IMAGE="$DOCKER_USER/govex-backend"
 PROXY_IMAGE="$DOCKER_USER/govex-proxy"
+AUTHENTIK_IMAGE="$DOCKER_USER/govex-authentik"
 
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "error: working tree is not clean. Commit or stash your changes first." >&2
@@ -105,6 +106,12 @@ docker buildx build --platform linux/amd64 \
   -t "$PROXY_IMAGE:latest" -t "$PROXY_IMAGE:$tag" \
   --push ./frontend
 
+echo "==> Building and pushing authentik image"
+docker buildx build --platform linux/amd64 \
+  -f authentik/Dockerfile \
+  -t "$AUTHENTIK_IMAGE:latest" -t "$AUTHENTIK_IMAGE:$tag" \
+  --push ./authentik
+
 bump_upper="$(echo "$bump" | tr '[:lower:]' '[:upper:]')"
 
 echo "==> Creating GitHub release $tag"
@@ -116,3 +123,4 @@ gh release create "$tag" \
 echo "==> Done. Released $tag and pushed:"
 echo "    $BACKEND_IMAGE:$tag (and :latest)"
 echo "    $PROXY_IMAGE:$tag (and :latest)"
+echo "    $AUTHENTIK_IMAGE:$tag (and :latest)"

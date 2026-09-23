@@ -1,0 +1,38 @@
+version: 1
+metadata:
+  name: govex - migration
+entries:
+  - model: authentik_rbac.role
+    id: migration-role
+    state: !If [!Env [GOVEX_MIGRATION_TOKEN, ""], present, absent]
+    identifiers:
+      name: govex-migration
+    attrs:
+      permissions:
+        - authentik_core.view_user
+        - authentik_core.add_user
+        - authentik_core.change_user
+        - authentik_core.reset_user_password
+
+  - model: authentik_core.user
+    id: migration-user
+    state: !If [!Env [GOVEX_MIGRATION_TOKEN, ""], present, absent]
+    identifiers:
+      username: govex-migration
+    attrs:
+      name: govex migration
+      type: service_account
+      path: govex/service-accounts
+      roles:
+        - !KeyOf migration-role
+
+  - model: authentik_core.token
+    state: !If [!Env [GOVEX_MIGRATION_TOKEN, ""], present, absent]
+    identifiers:
+      identifier: govex-migration
+    attrs:
+      user: !KeyOf migration-user
+      intent: api
+      key: !Env [GOVEX_MIGRATION_TOKEN, ""]
+      expiring: false
+      description: Used by manage.py migrate_to_authentik. Delete after the migration.
