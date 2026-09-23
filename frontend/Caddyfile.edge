@@ -2,10 +2,67 @@
 	email {$ACME_EMAIL}
 }
 
-{$DOMAIN}, {$ACCOUNT_DOMAIN} {
+(to_anubis) {
 	reverse_proxy anubis:3000 {
 		header_up X-Real-IP {remote_host}
 		header_up X-Http-Version {http.request.proto}
 		header_up X-TLS-SNI-Name {tls_server_name}
+	}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+}
+
+{$ACCOUNT_DOMAIN} {
+	import security_headers
+	redir https://{$DOMAIN}/account permanent
+}
+
+{$DOMAIN} {
+	import security_headers
+
+	@authentik_public {
+		path /api/v3/flows/executor/govex-* /api/v3/core/users/me/
+		path /application/o/*
+		path /flows/-/default/*
+	}
+	@passkeys_read {
+		path /api/v3/authenticators/webauthn/
+		method GET
+	}
+	@authentik_admin {
+		path /api/v3/* /application/* /flows/* /if/admin/* /static/* /media/* /ws/* /-/*
+		not path /if/flow/* /if/user/*
+	}
+
+	@authentik_config {
+		path /api/v3/policies/expression* /api/v3/propertymappings* /api/v3/stages/prompt/prompts*
+		path /api/v3/managed/blueprints* /api/v3/stages/captcha*
+	}
+
+	route {
+		respond @authentik_config 403
+
+		handle @authentik_public {
+			import to_anubis
+		}
+
+		handle @passkeys_read {
+			import to_anubis
+		}
+
+		handle @authentik_admin {
+			@not_admin not remote_ip {$ADMIN_IPS}
+			respond @not_admin 404
+			import to_anubis
+		}
+
+		import to_anubis
 	}
 }

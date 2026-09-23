@@ -21,22 +21,11 @@ services:
     build:
       context: ./backend
 
-    restart: unless-stopped
-
-    command: >
-      sh -c "
-      python manage.py migrate &&
-      python manage.py createcachetable &&
-      python manage.py bootstrap_admin &&
-      python manage.py bootstrap_client &&
-      python manage.py runserver 0.0.0.0:8000
-      "
+    profiles: [migration]
+    command: python manage.py migrate_to_authentik
 
     volumes:
       - ./backend:/app
-
-    ports:
-      - "8001:8000"
 
     environment:
       DB_NAME: govex
@@ -44,21 +33,8 @@ services:
       DB_PASSWORD: govex
       DB_HOST: db
       DB_PORT: 5432
-      ADMIN_USERNAME: admin
-      ADMIN_EMAIL: admin@govex.ch
-      ADMIN_PASSWORD: admin
-      # host.docker.internal: wintersehn's backend container reaches govex
-      # through it for the server-to-server token/userinfo exchange.
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend,host.docker.internal
-      DJANGO_CSRF_TRUSTED_ORIGINS: http://localhost:5174,http://127.0.0.1:5174
-      FRONTEND_LOGIN_URL: http://localhost:5174/login
-      # Local dev registration of wintersehn as a trusted OIDC client.
-      # wintersehn's own compose.yml points GOVEX_CLIENT_ID/SECRET at the
-      # same values via http://host.docker.internal:8001.
-      CLIENT_NAME: wintersehn (dev)
-      CLIENT_ID: wintersehn-dev
-      CLIENT_SECRET: wintersehn-dev-secret
-      CLIENT_REDIRECT_URI: http://localhost:8000/api/auth/oidc/callback/
+      AUTHENTIK_URL: http://authentik-server:9000
+      GOVEX_MIGRATION_TOKEN: govex-dev-migration-token
 
     depends_on:
       db:
@@ -79,12 +55,66 @@ services:
     ports:
       - "5174:5173"
 
+    depends_on:
+      - authentik-server
+
+  authentik-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+
     environment:
-      VITE_API_URL: http://localhost:8001
+      POSTGRES_DB: authentik
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: authentik
+
+    volumes:
+      - authentik_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authentik -d authentik"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  authentik-server: &authentik
+    image: ghcr.io/goauthentik/server:2026.8.3
+    restart: unless-stopped
+    command: server
+    shm_size: 512mb
+
+    environment:
+      AUTHENTIK_SECRET_KEY: govex-dev-authentik-secret-key-do-not-use-in-prod
+      AUTHENTIK_POSTGRESQL__HOST: authentik-db
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: authentik
+      AUTHENTIK_OUTPOSTS__DISABLE_EMBEDDED_OUTPOST: "true"
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+      AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+      AUTHENTIK_BOOTSTRAP_EMAIL: admin@govex.ch
+      AUTHENTIK_BOOTSTRAP_PASSWORD: admin
+      AUTHENTIK_BOOTSTRAP_TOKEN: govex-dev-bootstrap-token
+      GOVEX_WINTERSEHN_CLIENT_ID: wintersehn-dev
+      GOVEX_WINTERSEHN_CLIENT_SECRET: wintersehn-dev-secret
+      GOVEX_WINTERSEHN_REDIRECT_URI: http://localhost:8000/api/auth/oidc/callback/
+      GOVEX_MIGRATION_TOKEN: govex-dev-migration-token
+
+    volumes:
+      - ./authentik/blueprints:/blueprints/govex:ro
+
+    ports:
+      - "127.0.0.1:9000:9000"
 
     depends_on:
-      - backend
+      authentik-db:
+        condition: service_healthy
+
+  authentik-worker:
+    <<: *authentik
+    command: worker
+    ports: []
 
 volumes:
   postgres_data:
   frontend_node_modules:
+  authentik_data:

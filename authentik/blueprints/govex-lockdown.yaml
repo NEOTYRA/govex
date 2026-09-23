@@ -1,0 +1,120 @@
+version: 1
+metadata:
+  name: govex - lockdown
+entries:
+  - model: authentik_blueprints.metaapplyblueprint
+    attrs:
+      identifiers:
+        name: govex
+      required: true
+
+  - model: authentik_stages_prompt.prompt
+    id: field-warning
+    identifiers:
+      name: govex-lockdown-field-warning
+    attrs:
+      field_key: lockdown_warning
+      label: Achtung
+      type: alert_danger
+      required: false
+      initial_value: >-
+        Dein Konto wird sofort deaktiviert, dein Passwort ungültig gemacht, du
+        wirst überall abgemeldet und alle Zugriffe von Apps wie wintersehn werden
+        widerrufen. Entsperren kann nur ein Administrator.
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 0
+
+  - model: authentik_stages_prompt.prompt
+    id: field-reason
+    identifiers:
+      name: govex-lockdown-field-reason
+    attrs:
+      field_key: lockdown_reason
+      label: Grund
+      type: text
+      required: true
+      placeholder: z.B. Passwort geleakt, Gerät verloren
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 10
+
+  - model: authentik_stages_prompt.prompt
+    id: field-confirm
+    identifiers:
+      name: govex-lockdown-field-confirm
+    attrs:
+      field_key: lockdown_confirm
+      label: Ja, ich will mein Konto jetzt sperren.
+      type: checkbox
+      required: true
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 20
+
+  - model: authentik_stages_prompt.promptstage
+    id: lockdown-prompt
+    identifiers:
+      name: govex-lockdown-prompt
+    attrs:
+      fields:
+        - !KeyOf field-warning
+        - !KeyOf field-reason
+        - !KeyOf field-confirm
+
+  - model: authentik_policies_expression.expressionpolicy
+    id: lockdown-policy
+    identifiers:
+      name: govex-lockdown
+    attrs:
+      expression: !Format
+        - |
+          %s
+
+          prompt_data = request.context.get("prompt_data", {})
+          if not prompt_data.get("lockdown_confirm"):
+              return False
+          lockdown(request.user, prompt_data.get("lockdown_reason", ""), request.http_request)
+          return True
+        - !File /blueprints/govex/lockdown.py
+
+  - model: authentik_flows.flow
+    id: lockdown-flow
+    identifiers:
+      slug: govex-lockdown
+    attrs:
+      name: govex - Konto sperren
+      title: Konto sperren
+      designation: stage_configuration
+      authentication: require_authenticated
+      denied_action: message
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf lockdown-flow
+      stage: !Find [authentik_stages_authenticator_validate.authenticatorvalidatestage, [name, govex-webauthn-validate]]
+      order: 10
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf lockdown-flow
+      stage: !KeyOf lockdown-prompt
+      order: 20
+
+  - model: authentik_flows.flowstagebinding
+    id: lockdown-binding
+    identifiers:
+      target: !KeyOf lockdown-flow
+      stage: !Find [authentik_stages_user_logout.userlogoutstage, [name, govex-logout]]
+      order: 30
+    attrs:
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf lockdown-binding
+      policy: !KeyOf lockdown-policy
+      order: 0
+    attrs:
+      failure_result: false

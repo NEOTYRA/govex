@@ -6,13 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [
-    vue({
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => tag === 'altcha-widget',
-        },
-      },
-    }),
+    vue(),
     tailwindcss(),
   ],
 
@@ -26,14 +20,14 @@ export default defineConfig({
     host: '0.0.0.0',
 
     proxy: {
+      '/api/v3/flows/executor/': { target: 'http://authentik-server:9000' },
+      '/api/v3/core/users/me/': { target: 'http://authentik-server:9000' },
+      '/api/v3/authenticators/webauthn/': { target: 'http://authentik-server:9000' },
+      '/application/o/': { target: 'http://authentik-server:9000' },
+      '/flows/-/': { target: 'http://authentik-server:9000' },
       '/api': {
         target: 'http://backend:8000',
         changeOrigin: true,
-      },
-      // Keeps the Host header at localhost:5174, so the ?next= URL Django builds
-      // when /o/authorize/ redirects to the login page stays reachable.
-      '/o': {
-        target: 'http://backend:8000',
       },
     },
   },
