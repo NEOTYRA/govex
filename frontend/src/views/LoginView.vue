@@ -6,7 +6,7 @@
       submit-label="Anmelden"
       @done="finishFlow"
     />
-    <p class="text-sm mt-4 text-center opacity-70">
+    <p class="text-sm mt-4 text-center text-govex-muted">
       Noch kein Konto?
       <RouterLink :to="{ name: 'signup', query: $route.query }" class="link link-primary">
         Registrieren

@@ -18,18 +18,24 @@
 }
 
 @theme {
+  --color-govex-muted: #a8b3bf;
   --color-govex-slate: #6c829c;
   --color-govex-border: #e3e5e8;
+  --color-govex-highlight: #efe6f5;
 }
 
 [data-theme='dark'] {
+  --color-govex-muted: #8b96a3;
   --color-govex-slate: #a7b6c8;
   --color-govex-border: #3a3f4a;
+  --color-govex-highlight: #2f2438;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
+    --color-govex-muted: #8b96a3;
     --color-govex-slate: #a7b6c8;
     --color-govex-border: #3a3f4a;
+    --color-govex-highlight: #2f2438;
   }
 }
