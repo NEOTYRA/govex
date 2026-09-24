@@ -5,7 +5,8 @@ import { FLOWS } from '@/lib/authentik.js'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import SignupView from '@/views/SignupView.vue'
-import AccountView from '@/views/AccountView.vue'
+import ProfileView from '@/views/ProfileView.vue'
+import SecurityView from '@/views/SecurityView.vue'
 
 const authentikPaths = [
   {
@@ -23,7 +24,19 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView },
     { path: '/login', name: 'login', component: LoginView },
     { path: '/signup', name: 'signup', component: SignupView },
-    { path: '/account', name: 'account', component: AccountView, meta: { requiresAuth: true } },
+    { path: '/account', name: 'account', redirect: { name: 'profile' } },
+    {
+      path: '/account/profile',
+      name: 'profile',
+      component: ProfileView,
+      meta: { requiresAuth: true, accountNavigation: true },
+    },
+    {
+      path: '/account/security',
+      name: 'security',
+      component: SecurityView,
+      meta: { requiresAuth: true, accountNavigation: true },
+    },
     ...authentikPaths,
   ],
 })
@@ -32,6 +45,9 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore()
   if (!auth.ready) {
     await auth.fetchMe()
+  }
+  if (to.name === 'home' && auth.isAuthenticated) {
+    return { name: 'profile' }
   }
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login', query: { next: to.fullPath } }

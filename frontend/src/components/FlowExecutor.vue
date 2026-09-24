@@ -1,5 +1,5 @@
 <template>
-  <p v-if="loading && !challenge" class="text-sm opacity-70">Wird geladen …</p>
+  <p v-if="loading && !challenge" class="text-sm text-govex-muted">Wird geladen …</p>
 
   <form
     v-else-if="challenge?.component === 'ak-stage-identification'"
@@ -30,9 +30,9 @@
 
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
 
-    <button type="submit" class="btn btn-primary shadow-none w-full mt-6" :disabled="loading">
+    <BaseButton type="submit" variant="primary" block class="mt-6" :disabled="loading">
       {{ submitLabel }}
-    </button>
+    </BaseButton>
   </form>
 
   <form
@@ -75,7 +75,7 @@
           class="input w-full"
         />
       </template>
-      <p v-if="field.sub_text" class="text-xs opacity-70 mt-1">{{ field.sub_text }}</p>
+      <p v-if="field.sub_text" class="text-xs text-govex-muted mt-1">{{ field.sub_text }}</p>
       <p v-if="fieldErrors[field.field_key]" class="text-error text-sm mt-1">
         {{ fieldErrors[field.field_key] }}
       </p>
@@ -83,9 +83,9 @@
 
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
 
-    <button type="submit" class="btn btn-primary shadow-none w-full mt-6" :disabled="loading">
+    <BaseButton type="submit" variant="primary" block class="mt-6" :disabled="loading">
       {{ submitLabel }}
-    </button>
+    </BaseButton>
   </form>
 
   <div v-else-if="challenge?.component === 'ak-stage-captcha'">
@@ -97,14 +97,9 @@
   <div v-else-if="challenge?.component === 'ak-stage-authenticator-validate'">
     <p class="text-sm">Bestätige mit deinem Passkey, dass du es bist.</p>
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
-    <button
-      type="button"
-      class="btn btn-primary shadow-none w-full mt-6"
-      :disabled="loading"
-      @click="onValidatePasskey"
-    >
+    <BaseButton variant="primary" block class="mt-6" :disabled="loading" @click="onValidatePasskey">
       Mit Passkey bestätigen
-    </button>
+    </BaseButton>
   </div>
 
   <div v-else-if="challenge?.component === 'ak-stage-authenticator-webauthn'">
@@ -113,21 +108,14 @@
       Sicherheitsschlüssel. Du brauchst ihn bei jeder Anmeldung zusätzlich zum Passwort.
     </p>
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
-    <button
-      type="button"
-      class="btn btn-primary shadow-none w-full mt-6"
-      :disabled="loading"
-      @click="onRegisterPasskey"
-    >
+    <BaseButton variant="primary" block class="mt-6" :disabled="loading" @click="onRegisterPasskey">
       Passkey einrichten
-    </button>
+    </BaseButton>
   </div>
 
   <div v-else-if="challenge?.component === 'ak-stage-access-denied'">
     <p class="text-error text-sm">{{ challenge.error_message || 'Zugriff verweigert.' }}</p>
-    <button type="button" class="btn shadow-none w-full mt-6" @click="start">
-      Erneut versuchen
-    </button>
+    <BaseButton block class="mt-6" @click="start">Erneut versuchen</BaseButton>
   </div>
 
   <div v-else-if="challenge">
@@ -141,6 +129,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref, useTemplateRef } from 'vue'
+import BaseButton from '@/components/BaseButton.vue'
 import { FlowRun, errorsByField } from '@/lib/authentik.js'
 import { createCredential, getAssertion, isWebAuthnSupported } from '@/lib/webauthn.js'
 

@@ -16,32 +16,66 @@
       </RouterLink>
       <div v-if="auth.isAuthenticated" class="ml-auto flex items-center gap-3 px-6">
         <span class="text-sm text-white">{{ auth.user.username }}</span>
-        <RouterLink
+        <BaseButton
+          variant="ghost"
+          shape="square"
+          size="sm"
           to="/account"
           aria-current-value="false"
-          class="btn btn-square btn-ghost btn-sm shadow-none"
         >
           <img :src="settingsIcon" alt="Mein Profil" class="size-5 invert" />
-        </RouterLink>
+        </BaseButton>
+        <BaseButton
+          v-if="showNavigation"
+          variant="ghost"
+          shape="square"
+          size="sm"
+          class="lg:hidden"
+          :aria-label="navOpen ? 'Navigation schliessen' : 'Navigation öffnen'"
+          :aria-expanded="navOpen"
+          @click="navOpen = !navOpen"
+        >
+          <img :src="navOpen ? crossIcon : menuIcon" alt="" class="size-5 invert" />
+        </BaseButton>
       </div>
     </header>
 
-    <!-- pt-[117px]: wintersehn's breadcrumb bar (53px) + mt-16 above its cards -->
-    <main class="flex-1 px-6 pb-16 pt-[117px]">
-      <div class="mx-auto flex w-full max-w-100 flex-col gap-6">
-        <RouterView />
-      </div>
-    </main>
+    <div class="flex flex-1">
+      <AccountNavigation v-if="showNavigation" :open="navOpen" @close="navOpen = false" />
+
+      <!-- pt-[117px]: wintersehn's breadcrumb bar (53px) + mt-16 above its cards -->
+      <main class="min-w-0 flex-1 px-6 pb-16" :class="showNavigation ? 'pt-[53px]' : 'pt-[117px]'">
+        <RouterView v-if="showNavigation" />
+        <div v-else class="mx-auto flex w-full max-w-100 flex-col gap-6">
+          <RouterView />
+        </div>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
-import { RouterView, RouterLink } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { RouterView, RouterLink, useRoute } from 'vue-router'
+import AccountNavigation from '@/components/AccountNavigation.vue'
+import BaseButton from '@/components/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth.js'
 import settingsIcon from '@/assets/icons/settings.svg'
+import menuIcon from '@/assets/icons/menu-burger.svg'
+import crossIcon from '@/assets/icons/cross.svg'
 
 const auth = useAuthStore()
+const route = useRoute()
+
+const navOpen = ref(false)
+const showNavigation = computed(() => Boolean(route.meta.accountNavigation) && auth.isAuthenticated)
+
+watch(
+  () => route.fullPath,
+  () => {
+    navOpen.value = false
+  },
+)
 
 onMounted(() => {
   auth.fetchMe()
