@@ -66,7 +66,7 @@ if git rev-parse "$tag" >/dev/null 2>&1; then
   exit 1
 fi
 
-previous_tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+previous_tag="$(git tag --list 'v*' --sort=-v:refname | head -n1)"
 if [[ -n "$previous_tag" ]]; then
   range="$previous_tag..HEAD"
 else
@@ -92,7 +92,8 @@ fi
 sed -i '' -E "s/(\"version\": *\")[^\"]+(\")/\1$new_version\2/" frontend/package.json
 git add frontend/package.json
 git commit -m "chore: bump version to $tag"
-git push origin main
+git tag -a "$tag" -m "$tag"
+git push origin main "$tag"
 
 echo "==> Building and pushing backend image"
 docker buildx build --platform linux/amd64 \
@@ -116,7 +117,7 @@ bump_upper="$(echo "$bump" | tr '[:lower:]' '[:upper:]')"
 
 echo "==> Creating GitHub release $tag"
 gh release create "$tag" \
-  --target main \
+  --verify-tag \
   --title "$bump_upper — $tag" \
   --notes "$changelog"
 
