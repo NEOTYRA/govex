@@ -1,7 +1,7 @@
 <template>
   <div class="relative flex min-h-[100dvh] flex-col bg-base-200 pl-2">
     <div class="absolute top-0 left-0 z-20 h-full w-2 bg-primary" />
-    <header class="relative z-20 flex h-12 w-full items-center bg-primary">
+    <header class="sticky top-0 z-20 flex h-12 w-full items-center bg-primary">
       <RouterLink
         to="/"
         class="hidden h-full w-80 shrink-0 items-center bg-base-100 pl-8 text-base-content lg:flex"
@@ -16,7 +16,11 @@
       </RouterLink>
       <div v-if="auth.isAuthenticated" class="ml-auto flex items-center gap-3 px-6">
         <span class="text-sm text-white">{{ auth.user.username }}</span>
-        <RouterLink to="/account" class="btn btn-square btn-ghost btn-sm shadow-none">
+        <RouterLink
+          to="/account"
+          aria-current-value="false"
+          class="btn btn-square btn-ghost btn-sm shadow-none"
+        >
           <img :src="settingsIcon" alt="Mein Profil" class="size-5 invert" />
         </RouterLink>
       </div>
