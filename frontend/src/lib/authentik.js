@@ -6,6 +6,7 @@ export const FLOWS = {
   passkeyAdd: 'govex-passkey-add',
   totpAdd: 'govex-totp-add',
   lockdown: 'govex-lockdown',
+  accountDelete: 'govex-account-delete',
   logout: 'govex-logout',
 }
 
@@ -66,6 +67,7 @@ export class FlowRun {
   }
 
   async start() {
+    await fetch('/flows/-/cancel/?next=/', { credentials: 'include', redirect: 'manual' })
     return this.#challenge(await request(this.url))
   }
 

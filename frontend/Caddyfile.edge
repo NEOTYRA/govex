@@ -30,7 +30,7 @@
 	@authentik_public {
 		path /api/v3/flows/executor/govex-* /api/v3/core/users/me/
 		path /application/o/*
-		path /flows/-/default/*
+		path /flows/-/default/* /flows/-/cancel/
 	}
 	@passkeys_read {
 		path /api/v3/authenticators/webauthn/ /api/v3/authenticators/all/

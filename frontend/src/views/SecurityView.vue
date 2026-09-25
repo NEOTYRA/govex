@@ -100,6 +100,23 @@
         verloren hast: Sperrt dein Konto sofort und meldet dich überall ab.
       </p>
     </FlowCard>
+
+    <FlowCard
+      title="Konto löschen"
+      :flow="FLOWS.accountDelete"
+      action="Löschen"
+      submit-label="Konto endgültig löschen"
+      saved-message=""
+      button-variant="error"
+      :error="deleteError"
+      @open="deleteError = ''"
+      @done="onDeleted"
+    >
+      <p>
+        Löscht dein govex-Konto endgültig, zusammen mit deinen Konten in allen angeschlossenen Apps
+        wie wintersehn.
+      </p>
+    </FlowCard>
   </AccountPage>
 </template>
 
@@ -124,6 +141,7 @@ export default {
       renameError: '',
       saving: false,
       lockdownError: '',
+      deleteError: '',
     }
   },
   computed: {
@@ -185,6 +203,14 @@ export default {
       } finally {
         this.saving = false
       }
+    },
+    async onDeleted() {
+      await this.authStore.fetchMe()
+      if (this.authStore.isAuthenticated) {
+        this.deleteError = 'Das Konto konnte nicht gelöscht werden. Bitte versuche es erneut.'
+        return
+      }
+      this.$router.push({ name: 'home', query: { deleted: '1' } })
     },
     async onLockedDown() {
       await this.authStore.fetchMe()

@@ -97,6 +97,7 @@ services:
       GOVEX_WINTERSEHN_CLIENT_ID: wintersehn-dev
       GOVEX_WINTERSEHN_CLIENT_SECRET: wintersehn-dev-secret
       GOVEX_WINTERSEHN_REDIRECT_URI: http://localhost:8000/api/auth/oidc/callback/
+      GOVEX_WINTERSEHN_ACCOUNT_DELETED_URL: http://host.docker.internal:8000/api/auth/oidc/account-deleted/
       GOVEX_MIGRATION_TOKEN: govex-dev-migration-token
       AUTHENTIK_EMAIL__HOST: mailpit
       AUTHENTIK_EMAIL__PORT: 1025
