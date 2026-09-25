@@ -15,12 +15,24 @@
   </BaseCard>
 </template>
 
-<script setup>
+<script>
 import BaseCard from '@/components/BaseCard.vue'
 import FlowExecutor from '@/components/FlowExecutor.vue'
 import { RouterLink } from 'vue-router'
 import { FLOWS } from '@/lib/authentik.js'
 import { finishFlow, flowQuery } from '@/lib/navigation.js'
 
-const query = flowQuery()
+export default {
+  name: 'LoginView',
+  components: { BaseCard, FlowExecutor, RouterLink },
+  data() {
+    return {
+      FLOWS,
+      query: flowQuery(),
+    }
+  },
+  methods: {
+    finishFlow,
+  },
+}
 </script>

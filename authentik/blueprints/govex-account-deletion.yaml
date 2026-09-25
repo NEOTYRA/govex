@@ -1,0 +1,104 @@
+version: 1
+metadata:
+  name: govex - account deletion
+entries:
+  - model: authentik_blueprints.metaapplyblueprint
+    attrs:
+      identifiers:
+        name: govex
+      required: true
+
+  - model: authentik_stages_prompt.prompt
+    id: field-warning
+    identifiers:
+      name: govex-delete-field-warning
+    attrs:
+      field_key: delete_warning
+      label: Achtung
+      type: alert_danger
+      required: false
+      initial_value: >-
+        Dein govex-Konto und deine Konten in allen angeschlossenen Apps wie wintersehn werden
+        endgültig gelöscht. Das lässt sich nicht rückgängig machen.
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 0
+
+  - model: authentik_stages_prompt.prompt
+    id: field-confirm
+    identifiers:
+      name: govex-delete-field-confirm
+    attrs:
+      field_key: delete_confirm
+      label: Ja, ich will mein Konto endgültig löschen.
+      type: checkbox
+      required: true
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 10
+
+  - model: authentik_policies_expression.expressionpolicy
+    id: notify-apps-policy
+    identifiers:
+      name: govex-notify-account-deletion
+    attrs:
+      expression: !Format
+        - |
+          %s
+
+          if not request.context.get("prompt_data", {}).get("delete_confirm"):
+              return False
+          failed = notify_account_deletion(request.user)
+          if failed:
+              ak_message(
+                  "Dein Konto konnte in " + ", ".join(failed) + " nicht gelöscht werden. "
+                  "Es wurde nichts gelöscht, bitte versuche es später erneut."
+              )
+              return False
+          return True
+        - !File /blueprints/govex/account_deletion.py
+
+  - model: authentik_stages_prompt.promptstage
+    id: delete-prompt
+    identifiers:
+      name: govex-delete-prompt
+    attrs:
+      fields:
+        - !KeyOf field-warning
+        - !KeyOf field-confirm
+      validation_policies:
+        - !KeyOf notify-apps-policy
+
+  - model: authentik_stages_user_delete.userdeletestage
+    id: user-delete
+    identifiers:
+      name: govex-user-delete
+
+  - model: authentik_flows.flow
+    id: delete-flow
+    identifiers:
+      slug: govex-account-delete
+    attrs:
+      name: govex - Konto löschen
+      title: Konto löschen
+      designation: stage_configuration
+      authentication: require_authenticated
+      denied_action: message
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf delete-flow
+      stage: !Find [authentik_stages_authenticator_validate.authenticatorvalidatestage, [name, govex-webauthn-validate]]
+      order: 10
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf delete-flow
+      stage: !KeyOf delete-prompt
+      order: 20
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf delete-flow
+      stage: !KeyOf user-delete
+      order: 30

@@ -97,7 +97,12 @@ services:
       GOVEX_WINTERSEHN_CLIENT_ID: wintersehn-dev
       GOVEX_WINTERSEHN_CLIENT_SECRET: wintersehn-dev-secret
       GOVEX_WINTERSEHN_REDIRECT_URI: http://localhost:8000/api/auth/oidc/callback/
+      GOVEX_WINTERSEHN_ACCOUNT_DELETED_URL: http://host.docker.internal:8000/api/auth/oidc/account-deleted/
       GOVEX_MIGRATION_TOKEN: govex-dev-migration-token
+      AUTHENTIK_EMAIL__HOST: mailpit
+      AUTHENTIK_EMAIL__PORT: 1025
+      AUTHENTIK_EMAIL__USE_TLS: "false"
+      AUTHENTIK_EMAIL__FROM: govex@localhost
 
     volumes:
       - ./authentik/blueprints:/blueprints/govex:ro
@@ -113,6 +118,13 @@ services:
     <<: *authentik
     command: worker
     ports: []
+
+  mailpit:
+    image: axllent/mailpit:v1.31.2
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8025:8025"
 
 volumes:
   postgres_data:

@@ -7,8 +7,7 @@
   </button>
 </template>
 
-<script setup>
-import { computed } from 'vue'
+<script>
 import { RouterLink } from 'vue-router'
 
 const VARIANT_CLASSES = {
@@ -29,24 +28,31 @@ const SHAPE_CLASSES = {
   square: 'btn-square',
 }
 
-const props = defineProps({
-  variant: { type: String, default: 'neutral' },
-  outline: { type: Boolean, default: false },
-  size: { type: String, default: 'md' },
-  shape: { type: String, default: null },
-  block: { type: Boolean, default: false },
-  to: { type: [String, Object], default: null },
-  type: { type: String, default: 'button' },
-  disabled: { type: Boolean, default: false },
-})
-
-const classes = computed(() => [
-  'btn',
-  'shadow-none',
-  VARIANT_CLASSES[props.variant],
-  props.outline ? 'btn-outline' : '',
-  SIZE_CLASSES[props.size],
-  props.shape ? SHAPE_CLASSES[props.shape] : '',
-  props.block ? 'w-full' : '',
-])
+export default {
+  name: 'BaseButton',
+  components: { RouterLink },
+  props: {
+    variant: { type: String, default: 'neutral' },
+    outline: { type: Boolean, default: false },
+    size: { type: String, default: 'md' },
+    shape: { type: String, default: null },
+    block: { type: Boolean, default: false },
+    to: { type: [String, Object], default: null },
+    type: { type: String, default: 'button' },
+    disabled: { type: Boolean, default: false },
+  },
+  computed: {
+    classes() {
+      return [
+        'btn',
+        'shadow-none',
+        VARIANT_CLASSES[this.variant],
+        this.outline ? 'btn-outline' : '',
+        SIZE_CLASSES[this.size],
+        this.shape ? SHAPE_CLASSES[this.shape] : '',
+        this.block ? 'w-full' : '',
+      ]
+    },
+  },
+}
 </script>

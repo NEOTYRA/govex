@@ -24,14 +24,63 @@
             :key="passkey.pk"
             class="rounded-field border border-govex-border px-3 py-2 text-sm"
           >
-            <span class="font-medium text-base-content">{{ passkeyName(passkey) }}</span>
-            <span class="block text-xs text-govex-muted">
-              Hinzugefügt am {{ formatDate(passkey.created_on) }}
-            </span>
+            <form
+              v-if="renaming === passkey.pk"
+              class="flex flex-col gap-2 sm:flex-row sm:items-center"
+              @submit.prevent="onRename(passkey)"
+            >
+              <input
+                v-model="newName"
+                type="text"
+                maxlength="200"
+                required
+                aria-label="Name des Passkeys"
+                class="input input-sm w-full"
+              />
+              <div class="flex shrink-0 gap-2">
+                <BaseButton type="submit" variant="primary" size="sm" :disabled="saving">
+                  Speichern
+                </BaseButton>
+                <BaseButton size="sm" @click="renaming = null">Abbrechen</BaseButton>
+              </div>
+            </form>
+            <div v-else class="flex items-center justify-between gap-4">
+              <div class="min-w-0">
+                <span class="block truncate font-medium text-base-content">
+                  {{ passkeyName(passkey) }}
+                </span>
+                <span class="block text-xs text-govex-muted">
+                  <template v-if="passkeyType(passkey)">{{ passkeyType(passkey) }} · </template>
+                  Hinzugefügt am {{ formatDate(passkey.created_on) }}
+                </span>
+              </div>
+              <BaseButton variant="ghost" size="sm" class="shrink-0" @click="startRename(passkey)">
+                Umbenennen
+              </BaseButton>
+            </div>
+            <p v-if="renameError && renaming === passkey.pk" class="text-error text-xs mt-1">
+              {{ renameError }}
+            </p>
           </li>
           <li v-if="passkeysError" class="text-error text-sm">{{ passkeysError }}</li>
         </ul>
       </template>
+    </FlowCard>
+
+    <FlowCard
+      title="Authenticator-App"
+      :flow="FLOWS.totpAdd"
+      action="Einrichten"
+      saved-message="Authenticator-App eingerichtet."
+      @done="loadAuthenticators"
+    >
+      <p v-if="totpDevices.length">
+        Eingerichtet seit {{ formatDate(totpDevices[0].created) }}. Du kannst dich mit den Codes aus
+        deiner App anmelden.
+      </p>
+      <p v-else>
+        Codes aus einer App wie Google Authenticator, Microsoft Authenticator oder 1Password.
+      </p>
     </FlowCard>
 
     <FlowCard
@@ -51,52 +100,127 @@
         verloren hast: Sperrt dein Konto sofort und meldet dich überall ab.
       </p>
     </FlowCard>
+
+    <FlowCard
+      title="Konto löschen"
+      :flow="FLOWS.accountDelete"
+      action="Löschen"
+      submit-label="Konto endgültig löschen"
+      saved-message=""
+      button-variant="error"
+      :error="deleteError"
+      @open="deleteError = ''"
+      @done="onDeleted"
+    >
+      <p>
+        Löscht dein govex-Konto endgültig, zusammen mit deinen Konten in allen angeschlossenen Apps
+        wie wintersehn.
+      </p>
+    </FlowCard>
   </AccountPage>
 </template>
 
-<script setup>
+<script>
 import AccountPage from '@/components/AccountPage.vue'
+import BaseButton from '@/components/BaseButton.vue'
 import FlowCard from '@/components/FlowCard.vue'
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { FLOWS, fetchPasskeys } from '@/lib/authentik.js'
+import { FLOWS, fetchAuthenticators, fetchPasskeys, renamePasskey } from '@/lib/authentik.js'
 import { useAuthStore } from '@/stores/auth.js'
 
-const auth = useAuthStore()
-const router = useRouter()
-
-const passkeys = ref([])
-const passkeysError = ref('')
-
-async function loadPasskeys() {
-  try {
-    passkeys.value = await fetchPasskeys()
-    passkeysError.value = ''
-  } catch (err) {
-    passkeysError.value = err.message
-  }
-}
-
-function passkeyName(passkey) {
-  if (passkey.device_type?.description) return passkey.device_type.description
-  return passkey.name === 'WebAuthn Device' ? 'Passkey' : passkey.name
-}
-
-function formatDate(value) {
-  return new Date(value).toLocaleDateString('de-CH', { dateStyle: 'long' })
-}
-
-onMounted(loadPasskeys)
-
-const lockdownError = ref('')
-
-async function onLockedDown() {
-  await auth.fetchMe()
-  if (auth.isAuthenticated) {
-    lockdownError.value =
-      'Das Konto konnte nicht gesperrt werden. Bitte kontaktiere sofort einen Administrator.'
-    return
-  }
-  router.push({ name: 'home', query: { locked: '1' } })
+export default {
+  name: 'SecurityView',
+  components: { AccountPage, BaseButton, FlowCard },
+  data() {
+    return {
+      FLOWS,
+      passkeys: [],
+      passkeysError: '',
+      authenticators: [],
+      renaming: null,
+      newName: '',
+      renameError: '',
+      saving: false,
+      lockdownError: '',
+      deleteError: '',
+    }
+  },
+  computed: {
+    authStore() {
+      return useAuthStore()
+    },
+    totpDevices() {
+      return this.authenticators.filter((a) => a.type.toLowerCase().endsWith('.totpdevice'))
+    },
+  },
+  mounted() {
+    this.loadPasskeys()
+    this.loadAuthenticators()
+  },
+  methods: {
+    async loadPasskeys() {
+      try {
+        this.passkeys = await fetchPasskeys()
+        this.passkeysError = ''
+      } catch (err) {
+        this.passkeysError = err.message
+      }
+    },
+    async loadAuthenticators() {
+      try {
+        this.authenticators = await fetchAuthenticators()
+      } catch (err) {
+        this.passkeysError = err.message
+      }
+    },
+    passkeyName(passkey) {
+      return passkey.name === 'WebAuthn Device' ? 'Passkey' : passkey.name
+    },
+    passkeyType(passkey) {
+      const type = passkey.device_type?.description
+      return type && type !== passkey.name ? type : null
+    },
+    formatDate(value) {
+      return new Date(value).toLocaleDateString('de-CH', { dateStyle: 'long' })
+    },
+    startRename(passkey) {
+      this.renaming = passkey.pk
+      this.newName = this.passkeyName(passkey)
+      this.renameError = ''
+    },
+    async onRename(passkey) {
+      const name = this.newName.trim()
+      if (!name) {
+        this.renameError = 'Der Name darf nicht leer sein.'
+        return
+      }
+      this.saving = true
+      try {
+        const updated = await renamePasskey(passkey.pk, name)
+        this.passkeys = this.passkeys.map((p) => (p.pk === updated.pk ? updated : p))
+        this.renaming = null
+      } catch (err) {
+        this.renameError = err.message
+      } finally {
+        this.saving = false
+      }
+    },
+    async onDeleted() {
+      await this.authStore.fetchMe()
+      if (this.authStore.isAuthenticated) {
+        this.deleteError = 'Das Konto konnte nicht gelöscht werden. Bitte versuche es erneut.'
+        return
+      }
+      this.$router.push({ name: 'home', query: { deleted: '1' } })
+    },
+    async onLockedDown() {
+      await this.authStore.fetchMe()
+      if (this.authStore.isAuthenticated) {
+        this.lockdownError =
+          'Das Konto konnte nicht gesperrt werden. Bitte kontaktiere sofort einen Administrator.'
+        return
+      }
+      this.$router.push({ name: 'home', query: { locked: '1' } })
+    },
+  },
 }
 </script>

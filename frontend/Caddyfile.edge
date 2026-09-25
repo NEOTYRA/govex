@@ -30,11 +30,15 @@
 	@authentik_public {
 		path /api/v3/flows/executor/govex-* /api/v3/core/users/me/
 		path /application/o/*
-		path /flows/-/default/*
+		path /flows/-/default/* /flows/-/cancel/
 	}
 	@passkeys_read {
-		path /api/v3/authenticators/webauthn/
+		path /api/v3/authenticators/webauthn/ /api/v3/authenticators/all/
 		method GET
+	}
+	@passkeys_rename {
+		path /api/v3/authenticators/webauthn/*
+		method PATCH
 	}
 	@authentik_admin {
 		path /api/v3/* /application/* /flows/* /if/admin/* /static/* /media/* /ws/* /-/*
@@ -54,6 +58,10 @@
 		}
 
 		handle @passkeys_read {
+			import to_anubis
+		}
+
+		handle @passkeys_rename {
 			import to_anubis
 		}
 

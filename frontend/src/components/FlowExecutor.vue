@@ -94,12 +94,73 @@
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
   </div>
 
-  <div v-else-if="challenge?.component === 'ak-stage-authenticator-validate'">
-    <p class="text-sm">Bestätige mit deinem Passkey, dass du es bist.</p>
+  <div
+    v-else-if="
+      challenge?.component === 'ak-stage-authenticator-validate' &&
+      !challenge.device_challenges.length
+    "
+  >
+    <p class="text-sm">
+      Richte einen zweiten Faktor ein. Du brauchst ihn bei jeder Anmeldung zusätzlich zum Passwort.
+    </p>
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
-    <BaseButton variant="primary" block class="mt-6" :disabled="loading" @click="onValidatePasskey">
-      Mit Passkey bestätigen
-    </BaseButton>
+    <div class="mt-6 flex flex-col gap-2">
+      <BaseButton
+        v-for="stage in configurationStages"
+        :key="stage.pk"
+        block
+        :disabled="loading"
+        @click="submit({ selected_stage: stage.pk })"
+      >
+        {{ methodLabel(stage.meta_model_name) }}
+      </BaseButton>
+    </div>
+  </div>
+
+  <div v-else-if="challenge?.component === 'ak-stage-authenticator-validate'">
+    <div v-if="deviceClasses.length > 1" class="mb-4 flex flex-wrap gap-2">
+      <BaseButton
+        v-for="deviceClass in deviceClasses"
+        :key="deviceClass"
+        size="sm"
+        :variant="method === deviceClass ? 'primary' : 'neutral'"
+        @click="method = deviceClass"
+      >
+        {{ METHOD_LABELS[deviceClass] }}
+      </BaseButton>
+    </div>
+
+    <template v-if="method === 'webauthn'">
+      <p class="text-sm">Bestätige mit deinem Passkey, dass du es bist.</p>
+      <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
+      <BaseButton
+        variant="primary"
+        block
+        class="mt-6"
+        :disabled="loading"
+        @click="onValidatePasskey"
+      >
+        Mit Passkey bestätigen
+      </BaseButton>
+    </template>
+
+    <form v-else class="fieldset" @submit.prevent="submit({ code: fields.code })">
+      <p class="text-sm">Gib den Code aus deiner Authenticator-App ein.</p>
+      <label class="label mt-4" for="flow-code">Code</label>
+      <input
+        id="flow-code"
+        v-model="fields.code"
+        type="text"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        class="input w-full"
+        required
+      />
+      <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
+      <BaseButton type="submit" variant="primary" block class="mt-6" :disabled="loading">
+        Bestätigen
+      </BaseButton>
+    </form>
   </div>
 
   <div v-else-if="challenge?.component === 'ak-stage-authenticator-webauthn'">
@@ -112,6 +173,40 @@
       Passkey einrichten
     </BaseButton>
   </div>
+
+  <form
+    v-else-if="challenge?.component === 'ak-stage-authenticator-totp'"
+    class="fieldset"
+    @submit.prevent="submit({ code: fields.code })"
+  >
+    <p class="text-sm">
+      Scanne den QR-Code mit deiner Authenticator-App, zum Beispiel Google Authenticator, Microsoft
+      Authenticator oder 1Password, und gib den angezeigten Code ein.
+    </p>
+    <img
+      v-if="qrCode"
+      :src="qrCode"
+      alt="QR-Code für die Authenticator-App"
+      class="mx-auto mt-4 size-48"
+    />
+    <p class="mt-2 text-center text-xs text-govex-muted break-all">
+      Schlüssel zum Abtippen: <span class="font-mono">{{ totpSecret }}</span>
+    </p>
+    <label class="label mt-4" for="flow-totp-code">Code</label>
+    <input
+      id="flow-totp-code"
+      v-model="fields.code"
+      type="text"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      class="input w-full"
+      required
+    />
+    <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
+    <BaseButton type="submit" variant="primary" block class="mt-6" :disabled="loading">
+      Bestätigen
+    </BaseButton>
+  </form>
 
   <div v-else-if="challenge?.component === 'ak-stage-access-denied'">
     <p class="text-error text-sm">{{ challenge.error_message || 'Zugriff verweigert.' }}</p>
@@ -127,28 +222,16 @@
   <p v-else-if="error" class="text-error text-sm">{{ error }}</p>
 </template>
 
-<script setup>
-import { computed, nextTick, onMounted, reactive, ref, useTemplateRef } from 'vue'
+<script>
+import QRCode from 'qrcode'
 import BaseButton from '@/components/BaseButton.vue'
 import { FlowRun, errorsByField } from '@/lib/authentik.js'
 import { createCredential, getAssertion, isWebAuthnSupported } from '@/lib/webauthn.js'
 
-const props = defineProps({
-  slug: { type: String, required: true },
-  query: { type: String, default: '' },
-  submitLabel: { type: String, default: 'Weiter' },
-})
-
-const emit = defineEmits(['done'])
-
-const captcha = useTemplateRef('captcha')
-const challenge = ref(null)
-const loading = ref(false)
-const error = ref('')
-const fieldErrors = ref({})
-const fields = reactive({})
-
-let run = null
+const METHOD_LABELS = {
+  webauthn: 'Passkey',
+  totp: 'Authenticator-App',
+}
 
 const ALERT_CLASSES = {
   alert_info: 'alert-info',
@@ -156,124 +239,172 @@ const ALERT_CLASSES = {
   alert_danger: 'alert-error',
 }
 
-const promptFields = computed(() =>
-  [...(challenge.value?.fields ?? [])].sort((a, b) => a.order - b.order),
-)
-
-function inputType(type) {
-  if (type === 'username') return 'text'
-  return ['email', 'password', 'number', 'date'].includes(type) ? type : 'text'
-}
-
-function autocomplete(field) {
-  if (field.type === 'username') return 'username'
-  if (field.type === 'email') return 'email'
-  if (field.type === 'password') return 'new-password'
-  return 'off'
-}
-
-function promptValues() {
-  return Object.fromEntries(
-    promptFields.value
-      .filter((f) => !(f.type in ALERT_CLASSES))
-      .map((f) => [f.field_key, fields[f.field_key]]),
-  )
-}
-
-async function show(next) {
-  const errors = errorsByField(next)
-  error.value = errors.non_field_errors ?? ''
-  fieldErrors.value = errors
-
-  if (next.component === 'xak-flow-redirect') {
-    emit('done', next.to)
-    return
-  }
-
-  if (next.component !== challenge.value?.component) {
-    for (const key of Object.keys(fields)) delete fields[key]
-    for (const field of next.fields ?? []) {
-      fields[field.field_key] = field.type === 'checkbox' ? false : (field.initial_value ?? '')
+export default {
+  name: 'FlowExecutor',
+  components: { BaseButton },
+  props: {
+    slug: { type: String, required: true },
+    query: { type: String, default: '' },
+    submitLabel: { type: String, default: 'Weiter' },
+  },
+  emits: ['done'],
+  data() {
+    return {
+      ALERT_CLASSES,
+      METHOD_LABELS,
+      challenge: null,
+      method: null,
+      qrCode: '',
+      loading: false,
+      error: '',
+      fieldErrors: {},
+      fields: {},
     }
-    if (next.component === 'ak-stage-identification') {
-      fields.uid_field = next.pending_user_identifier ?? ''
-    }
-  }
-  if (next.component === 'ak-stage-identification') fields.password = ''
+  },
+  computed: {
+    deviceClasses() {
+      const available = (this.challenge?.device_challenges ?? []).map((c) => c.device_class)
+      return Object.keys(METHOD_LABELS).filter((deviceClass) => available.includes(deviceClass))
+    },
+    configurationStages() {
+      const order = Object.keys(METHOD_LABELS)
+      const rank = (stage) => order.findIndex((c) => stage.meta_model_name.includes(c))
+      return [...(this.challenge?.configuration_stages ?? [])].sort((a, b) => rank(a) - rank(b))
+    },
+    totpSecret() {
+      if (!this.challenge?.config_url) return ''
+      return new URL(this.challenge.config_url).searchParams.get('secret') ?? ''
+    },
+    promptFields() {
+      return [...(this.challenge?.fields ?? [])].sort((a, b) => a.order - b.order)
+    },
+  },
+  mounted() {
+    this.start()
+  },
+  methods: {
+    methodLabel(metaModelName) {
+      const deviceClass = Object.keys(METHOD_LABELS).find((c) => metaModelName.includes(c))
+      return METHOD_LABELS[deviceClass] ?? metaModelName
+    },
+    inputType(type) {
+      if (type === 'username') return 'text'
+      return ['email', 'password', 'number', 'date'].includes(type) ? type : 'text'
+    },
+    autocomplete(field) {
+      if (field.type === 'username') return 'username'
+      if (field.type === 'email') return 'email'
+      if (field.type === 'password') return 'new-password'
+      return 'off'
+    },
+    promptValues() {
+      return Object.fromEntries(
+        this.promptFields
+          .filter((f) => !(f.type in ALERT_CLASSES))
+          .map((f) => [f.field_key, this.fields[f.field_key]]),
+      )
+    },
+    async show(next) {
+      const errors = errorsByField(next)
+      this.error =
+        next.component === 'ak-stage-prompt'
+          ? (errors.non_field_errors ?? '')
+          : (errors.non_field_errors ?? Object.values(errors)[0] ?? '')
+      this.fieldErrors = errors
 
-  challenge.value = next
-  if (next.component === 'ak-stage-captcha') {
-    await nextTick()
-    renderCaptcha(next)
-  }
+      if (next.component === 'xak-flow-redirect') {
+        this.$emit('done', next.to)
+        return
+      }
+
+      if (next.component !== this.challenge?.component) {
+        const fields = {}
+        for (const field of next.fields ?? []) {
+          fields[field.field_key] = field.type === 'checkbox' ? false : (field.initial_value ?? '')
+        }
+        if (next.component === 'ak-stage-identification') {
+          fields.uid_field = next.pending_user_identifier ?? ''
+        }
+        this.fields = fields
+      }
+      if (next.component === 'ak-stage-authenticator-validate') {
+        const available = (next.device_challenges ?? []).map((c) => c.device_class)
+        if (!available.includes(this.method)) {
+          this.method = Object.keys(METHOD_LABELS).find((c) => available.includes(c)) ?? null
+        }
+      }
+      if (next.component === 'ak-stage-authenticator-totp') {
+        this.qrCode = await QRCode.toDataURL(next.config_url, { margin: 1, width: 384 })
+      }
+      if (next.component === 'ak-stage-identification') this.fields.password = ''
+
+      this.challenge = next
+      if (next.component === 'ak-stage-captcha') {
+        await this.$nextTick()
+        this.renderCaptcha(next)
+      }
+    },
+    async step(action) {
+      this.loading = true
+      try {
+        await this.show(await action())
+      } catch (err) {
+        this.error = err.message
+      } finally {
+        this.loading = false
+      }
+    },
+    start() {
+      this.challenge = null
+      this.run = new FlowRun(this.slug, this.query)
+      return this.step(() => this.run.start())
+    },
+    submit(values) {
+      return this.step(() => this.run.submit(this.challenge.component, values))
+    },
+    async onValidatePasskey() {
+      const webauthn = this.challenge.device_challenges.find((c) => c.device_class === 'webauthn')
+      if (!webauthn || !isWebAuthnSupported()) {
+        this.error = 'Dieser Browser unterstützt keine Passkeys.'
+        return
+      }
+      try {
+        await this.submit({ webauthn: await getAssertion(webauthn.challenge) })
+      } catch (err) {
+        this.error = err.message
+      }
+    },
+    async onRegisterPasskey() {
+      if (!isWebAuthnSupported()) {
+        this.error = 'Dieser Browser unterstützt keine Passkeys.'
+        return
+      }
+      try {
+        await this.submit({ response: await createCredential(this.challenge.registration) })
+      } catch (err) {
+        this.error = err.message
+      }
+    },
+    renderCaptcha(current) {
+      const mount = () =>
+        window.turnstile.render(this.$refs.captcha, {
+          sitekey: current.site_key,
+          callback: (token) => this.submit({ token }),
+          'error-callback': () => {
+            this.error = 'Bot-Verifizierung fehlgeschlagen. Bitte lade die Seite neu.'
+          },
+        })
+
+      if (window.turnstile) {
+        mount()
+        return
+      }
+      const script = document.createElement('script')
+      script.src = current.js_url
+      script.async = true
+      script.onload = mount
+      document.head.appendChild(script)
+    },
+  },
 }
-
-async function step(action) {
-  loading.value = true
-  try {
-    await show(await action())
-  } catch (err) {
-    error.value = err.message
-  } finally {
-    loading.value = false
-  }
-}
-
-function start() {
-  challenge.value = null
-  run = new FlowRun(props.slug, props.query)
-  return step(() => run.start())
-}
-
-function submit(values) {
-  return step(() => run.submit(challenge.value.component, values))
-}
-
-async function onValidatePasskey() {
-  const webauthn = challenge.value.device_challenges.find((c) => c.device_class === 'webauthn')
-  if (!webauthn || !isWebAuthnSupported()) {
-    error.value = 'Dieser Browser unterstützt keine Passkeys.'
-    return
-  }
-  try {
-    await submit({ webauthn: await getAssertion(webauthn.challenge) })
-  } catch (err) {
-    error.value = err.message
-  }
-}
-
-async function onRegisterPasskey() {
-  if (!isWebAuthnSupported()) {
-    error.value = 'Dieser Browser unterstützt keine Passkeys.'
-    return
-  }
-  try {
-    await submit({ response: await createCredential(challenge.value.registration) })
-  } catch (err) {
-    error.value = err.message
-  }
-}
-
-function renderCaptcha(current) {
-  const mount = () =>
-    window.turnstile.render(captcha.value, {
-      sitekey: current.site_key,
-      callback: (token) => submit({ token }),
-      'error-callback': () => {
-        error.value = 'Bot-Verifizierung fehlgeschlagen. Bitte lade die Seite neu.'
-      },
-    })
-
-  if (window.turnstile) {
-    mount()
-    return
-  }
-  const script = document.createElement('script')
-  script.src = current.js_url
-  script.async = true
-  script.onload = mount
-  document.head.appendChild(script)
-}
-
-onMounted(start)
 </script>

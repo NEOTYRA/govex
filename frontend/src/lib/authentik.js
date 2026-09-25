@@ -4,7 +4,9 @@ export const FLOWS = {
   profile: 'govex-profile',
   passwordChange: 'govex-password-change',
   passkeyAdd: 'govex-passkey-add',
+  totpAdd: 'govex-totp-add',
   lockdown: 'govex-lockdown',
+  accountDelete: 'govex-account-delete',
   logout: 'govex-logout',
 }
 
@@ -40,12 +42,32 @@ export async function fetchPasskeys() {
   return data.results
 }
 
+export async function fetchAuthenticators() {
+  const { response, data } = await request('/api/v3/authenticators/all/')
+  if (!response.ok) {
+    throw new Error('Zwei-Faktor-Methoden konnten nicht geladen werden.')
+  }
+  return data
+}
+
+export async function renamePasskey(pk, name) {
+  const { response, data } = await request(`/api/v3/authenticators/webauthn/${pk}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  })
+  if (!response.ok) {
+    throw new Error(data?.name?.[0] ?? 'Passkey konnte nicht umbenannt werden.')
+  }
+  return data
+}
+
 export class FlowRun {
   constructor(slug, query = '') {
     this.url = `/api/v3/flows/executor/${slug}/?query=${encodeURIComponent(query)}`
   }
 
   async start() {
+    await fetch('/flows/-/cancel/?next=/', { credentials: 'include', redirect: 'manual' })
     return this.#challenge(await request(this.url))
   }
 
