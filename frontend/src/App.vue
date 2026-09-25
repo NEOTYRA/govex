@@ -14,8 +14,8 @@
       >
         G
       </RouterLink>
-      <div v-if="auth.isAuthenticated" class="ml-auto flex items-center gap-3 px-6">
-        <span class="text-sm text-white">{{ auth.user.username }}</span>
+      <div v-if="authStore.isAuthenticated" class="ml-auto flex items-center gap-3 px-6">
+        <span class="text-sm text-white">{{ authStore.user.username }}</span>
         <BaseButton
           variant="ghost"
           shape="square"
@@ -54,9 +54,8 @@
   </div>
 </template>
 
-<script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { RouterView, RouterLink, useRoute } from 'vue-router'
+<script>
+import { RouterView, RouterLink } from 'vue-router'
 import AccountNavigation from '@/components/AccountNavigation.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth.js'
@@ -64,20 +63,32 @@ import settingsIcon from '@/assets/icons/settings.svg'
 import menuIcon from '@/assets/icons/menu-burger.svg'
 import crossIcon from '@/assets/icons/cross.svg'
 
-const auth = useAuthStore()
-const route = useRoute()
-
-const navOpen = ref(false)
-const showNavigation = computed(() => Boolean(route.meta.accountNavigation) && auth.isAuthenticated)
-
-watch(
-  () => route.fullPath,
-  () => {
-    navOpen.value = false
+export default {
+  name: 'App',
+  components: { RouterView, RouterLink, AccountNavigation, BaseButton },
+  data() {
+    return {
+      navOpen: false,
+      settingsIcon,
+      menuIcon,
+      crossIcon,
+    }
   },
-)
-
-onMounted(() => {
-  auth.fetchMe()
-})
+  computed: {
+    authStore() {
+      return useAuthStore()
+    },
+    showNavigation() {
+      return Boolean(this.$route.meta.accountNavigation) && this.authStore.isAuthenticated
+    },
+  },
+  watch: {
+    '$route.fullPath'() {
+      this.navOpen = false
+    },
+  },
+  mounted() {
+    this.authStore.fetchMe()
+  },
+}
 </script>

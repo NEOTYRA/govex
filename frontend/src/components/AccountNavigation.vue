@@ -32,8 +32,8 @@
   </aside>
 </template>
 
-<script setup>
-import { RouterLink, useRouter } from 'vue-router'
+<script>
+import { RouterLink } from 'vue-router'
 import BaseButton from '@/components/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth.js'
 import fingerprintIcon from '@/assets/icons/fingerprint.svg'
@@ -41,24 +41,34 @@ import shieldIcon from '@/assets/icons/shield.svg'
 import exitIcon from '@/assets/icons/exit.svg'
 import packageJson from '../../package.json'
 
-defineProps({
-  open: { type: Boolean, default: false },
-})
-
-const emit = defineEmits(['close'])
-
-const auth = useAuthStore()
-const router = useRouter()
-const version = packageJson.version
-
-const items = [
-  { name: 'profile', label: 'Profil', icon: fingerprintIcon },
-  { name: 'security', label: 'Sicherheit', icon: shieldIcon },
-]
-
-async function onLogout() {
-  emit('close')
-  await auth.logout()
-  router.push({ name: 'home' })
+export default {
+  name: 'AccountNavigation',
+  components: { RouterLink, BaseButton },
+  props: {
+    open: { type: Boolean, default: false },
+  },
+  emits: ['close'],
+  data() {
+    return {
+      exitIcon,
+      version: packageJson.version,
+      items: [
+        { name: 'profile', label: 'Profil', icon: fingerprintIcon },
+        { name: 'security', label: 'Sicherheit', icon: shieldIcon },
+      ],
+    }
+  },
+  computed: {
+    authStore() {
+      return useAuthStore()
+    },
+  },
+  methods: {
+    async onLogout() {
+      this.$emit('close')
+      await this.authStore.logout()
+      this.$router.push({ name: 'home' })
+    },
+  },
 }
 </script>

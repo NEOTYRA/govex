@@ -40,6 +40,17 @@ export async function fetchPasskeys() {
   return data.results
 }
 
+export async function renamePasskey(pk, name) {
+  const { response, data } = await request(`/api/v3/authenticators/webauthn/${pk}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  })
+  if (!response.ok) {
+    throw new Error(data?.name?.[0] ?? 'Passkey konnte nicht umbenannt werden.')
+  }
+  return data
+}
+
 export class FlowRun {
   constructor(slug, query = '') {
     this.url = `/api/v3/flows/executor/${slug}/?query=${encodeURIComponent(query)}`

@@ -5,8 +5,11 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  title: { type: String, required: true },
-})
+<script>
+export default {
+  name: 'AccountPage',
+  props: {
+    title: { type: String, required: true },
+  },
+}
 </script>

@@ -127,28 +127,10 @@
   <p v-else-if="error" class="text-error text-sm">{{ error }}</p>
 </template>
 
-<script setup>
-import { computed, nextTick, onMounted, reactive, ref, useTemplateRef } from 'vue'
+<script>
 import BaseButton from '@/components/BaseButton.vue'
 import { FlowRun, errorsByField } from '@/lib/authentik.js'
 import { createCredential, getAssertion, isWebAuthnSupported } from '@/lib/webauthn.js'
-
-const props = defineProps({
-  slug: { type: String, required: true },
-  query: { type: String, default: '' },
-  submitLabel: { type: String, default: 'Weiter' },
-})
-
-const emit = defineEmits(['done'])
-
-const captcha = useTemplateRef('captcha')
-const challenge = ref(null)
-const loading = ref(false)
-const error = ref('')
-const fieldErrors = ref({})
-const fields = reactive({})
-
-let run = null
 
 const ALERT_CLASSES = {
   alert_info: 'alert-info',
@@ -156,124 +138,140 @@ const ALERT_CLASSES = {
   alert_danger: 'alert-error',
 }
 
-const promptFields = computed(() =>
-  [...(challenge.value?.fields ?? [])].sort((a, b) => a.order - b.order),
-)
-
-function inputType(type) {
-  if (type === 'username') return 'text'
-  return ['email', 'password', 'number', 'date'].includes(type) ? type : 'text'
-}
-
-function autocomplete(field) {
-  if (field.type === 'username') return 'username'
-  if (field.type === 'email') return 'email'
-  if (field.type === 'password') return 'new-password'
-  return 'off'
-}
-
-function promptValues() {
-  return Object.fromEntries(
-    promptFields.value
-      .filter((f) => !(f.type in ALERT_CLASSES))
-      .map((f) => [f.field_key, fields[f.field_key]]),
-  )
-}
-
-async function show(next) {
-  const errors = errorsByField(next)
-  error.value = errors.non_field_errors ?? ''
-  fieldErrors.value = errors
-
-  if (next.component === 'xak-flow-redirect') {
-    emit('done', next.to)
-    return
-  }
-
-  if (next.component !== challenge.value?.component) {
-    for (const key of Object.keys(fields)) delete fields[key]
-    for (const field of next.fields ?? []) {
-      fields[field.field_key] = field.type === 'checkbox' ? false : (field.initial_value ?? '')
+export default {
+  name: 'FlowExecutor',
+  components: { BaseButton },
+  props: {
+    slug: { type: String, required: true },
+    query: { type: String, default: '' },
+    submitLabel: { type: String, default: 'Weiter' },
+  },
+  emits: ['done'],
+  data() {
+    return {
+      ALERT_CLASSES,
+      challenge: null,
+      loading: false,
+      error: '',
+      fieldErrors: {},
+      fields: {},
     }
-    if (next.component === 'ak-stage-identification') {
-      fields.uid_field = next.pending_user_identifier ?? ''
-    }
-  }
-  if (next.component === 'ak-stage-identification') fields.password = ''
+  },
+  computed: {
+    promptFields() {
+      return [...(this.challenge?.fields ?? [])].sort((a, b) => a.order - b.order)
+    },
+  },
+  mounted() {
+    this.start()
+  },
+  methods: {
+    inputType(type) {
+      if (type === 'username') return 'text'
+      return ['email', 'password', 'number', 'date'].includes(type) ? type : 'text'
+    },
+    autocomplete(field) {
+      if (field.type === 'username') return 'username'
+      if (field.type === 'email') return 'email'
+      if (field.type === 'password') return 'new-password'
+      return 'off'
+    },
+    promptValues() {
+      return Object.fromEntries(
+        this.promptFields
+          .filter((f) => !(f.type in ALERT_CLASSES))
+          .map((f) => [f.field_key, this.fields[f.field_key]]),
+      )
+    },
+    async show(next) {
+      const errors = errorsByField(next)
+      this.error = errors.non_field_errors ?? ''
+      this.fieldErrors = errors
 
-  challenge.value = next
-  if (next.component === 'ak-stage-captcha') {
-    await nextTick()
-    renderCaptcha(next)
-  }
+      if (next.component === 'xak-flow-redirect') {
+        this.$emit('done', next.to)
+        return
+      }
+
+      if (next.component !== this.challenge?.component) {
+        const fields = {}
+        for (const field of next.fields ?? []) {
+          fields[field.field_key] = field.type === 'checkbox' ? false : (field.initial_value ?? '')
+        }
+        if (next.component === 'ak-stage-identification') {
+          fields.uid_field = next.pending_user_identifier ?? ''
+        }
+        this.fields = fields
+      }
+      if (next.component === 'ak-stage-identification') this.fields.password = ''
+
+      this.challenge = next
+      if (next.component === 'ak-stage-captcha') {
+        await this.$nextTick()
+        this.renderCaptcha(next)
+      }
+    },
+    async step(action) {
+      this.loading = true
+      try {
+        await this.show(await action())
+      } catch (err) {
+        this.error = err.message
+      } finally {
+        this.loading = false
+      }
+    },
+    start() {
+      this.challenge = null
+      this.run = new FlowRun(this.slug, this.query)
+      return this.step(() => this.run.start())
+    },
+    submit(values) {
+      return this.step(() => this.run.submit(this.challenge.component, values))
+    },
+    async onValidatePasskey() {
+      const webauthn = this.challenge.device_challenges.find((c) => c.device_class === 'webauthn')
+      if (!webauthn || !isWebAuthnSupported()) {
+        this.error = 'Dieser Browser unterstützt keine Passkeys.'
+        return
+      }
+      try {
+        await this.submit({ webauthn: await getAssertion(webauthn.challenge) })
+      } catch (err) {
+        this.error = err.message
+      }
+    },
+    async onRegisterPasskey() {
+      if (!isWebAuthnSupported()) {
+        this.error = 'Dieser Browser unterstützt keine Passkeys.'
+        return
+      }
+      try {
+        await this.submit({ response: await createCredential(this.challenge.registration) })
+      } catch (err) {
+        this.error = err.message
+      }
+    },
+    renderCaptcha(current) {
+      const mount = () =>
+        window.turnstile.render(this.$refs.captcha, {
+          sitekey: current.site_key,
+          callback: (token) => this.submit({ token }),
+          'error-callback': () => {
+            this.error = 'Bot-Verifizierung fehlgeschlagen. Bitte lade die Seite neu.'
+          },
+        })
+
+      if (window.turnstile) {
+        mount()
+        return
+      }
+      const script = document.createElement('script')
+      script.src = current.js_url
+      script.async = true
+      script.onload = mount
+      document.head.appendChild(script)
+    },
+  },
 }
-
-async function step(action) {
-  loading.value = true
-  try {
-    await show(await action())
-  } catch (err) {
-    error.value = err.message
-  } finally {
-    loading.value = false
-  }
-}
-
-function start() {
-  challenge.value = null
-  run = new FlowRun(props.slug, props.query)
-  return step(() => run.start())
-}
-
-function submit(values) {
-  return step(() => run.submit(challenge.value.component, values))
-}
-
-async function onValidatePasskey() {
-  const webauthn = challenge.value.device_challenges.find((c) => c.device_class === 'webauthn')
-  if (!webauthn || !isWebAuthnSupported()) {
-    error.value = 'Dieser Browser unterstützt keine Passkeys.'
-    return
-  }
-  try {
-    await submit({ webauthn: await getAssertion(webauthn.challenge) })
-  } catch (err) {
-    error.value = err.message
-  }
-}
-
-async function onRegisterPasskey() {
-  if (!isWebAuthnSupported()) {
-    error.value = 'Dieser Browser unterstützt keine Passkeys.'
-    return
-  }
-  try {
-    await submit({ response: await createCredential(challenge.value.registration) })
-  } catch (err) {
-    error.value = err.message
-  }
-}
-
-function renderCaptcha(current) {
-  const mount = () =>
-    window.turnstile.render(captcha.value, {
-      sitekey: current.site_key,
-      callback: (token) => submit({ token }),
-      'error-callback': () => {
-        error.value = 'Bot-Verifizierung fehlgeschlagen. Bitte lade die Seite neu.'
-      },
-    })
-
-  if (window.turnstile) {
-    mount()
-    return
-  }
-  const script = document.createElement('script')
-  script.src = current.js_url
-  script.async = true
-  script.onload = mount
-  document.head.appendChild(script)
-}
-
-onMounted(start)
 </script>

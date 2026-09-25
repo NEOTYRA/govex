@@ -12,7 +12,12 @@
   </BaseCard>
 </template>
 
-<script setup>
+<script>
 import BaseButton from '@/components/BaseButton.vue'
 import BaseCard from '@/components/BaseCard.vue'
+
+export default {
+  name: 'HomeView',
+  components: { BaseButton, BaseCard },
+}
 </script>

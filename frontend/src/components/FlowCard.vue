@@ -30,37 +30,42 @@
   </section>
 </template>
 
-<script setup>
+<script>
 import BaseButton from '@/components/BaseButton.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import FlowExecutor from '@/components/FlowExecutor.vue'
-import { ref } from 'vue'
 
-defineProps({
-  title: { type: String, required: true },
-  flow: { type: String, required: true },
-  action: { type: String, required: true },
-  savedMessage: { type: String, default: 'Gespeichert.' },
-  submitLabel: { type: String, default: 'Speichern' },
-  buttonVariant: { type: String, default: 'neutral' },
-  buttonOutline: { type: Boolean, default: false },
-  error: { type: String, default: '' },
-})
-
-const emit = defineEmits(['open', 'done'])
-
-const active = ref(false)
-const saved = ref(false)
-
-function open() {
-  saved.value = false
-  active.value = true
-  emit('open')
-}
-
-async function onDone(to) {
-  active.value = false
-  saved.value = true
-  emit('done', to)
+export default {
+  name: 'FlowCard',
+  components: { BaseButton, BaseCard, FlowExecutor },
+  props: {
+    title: { type: String, required: true },
+    flow: { type: String, required: true },
+    action: { type: String, required: true },
+    savedMessage: { type: String, default: 'Gespeichert.' },
+    submitLabel: { type: String, default: 'Speichern' },
+    buttonVariant: { type: String, default: 'neutral' },
+    buttonOutline: { type: Boolean, default: false },
+    error: { type: String, default: '' },
+  },
+  emits: ['open', 'done'],
+  data() {
+    return {
+      active: false,
+      saved: false,
+    }
+  },
+  methods: {
+    open() {
+      this.saved = false
+      this.active = true
+      this.$emit('open')
+    },
+    onDone(to) {
+      this.active = false
+      this.saved = true
+      this.$emit('done', to)
+    },
+  },
 }
 </script>

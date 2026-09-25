@@ -10,8 +10,11 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  title: { type: String, default: null },
-})
+<script>
+export default {
+  name: 'BaseCard',
+  props: {
+    title: { type: String, default: null },
+  },
+}
 </script>
