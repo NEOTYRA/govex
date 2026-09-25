@@ -68,6 +68,22 @@
     </FlowCard>
 
     <FlowCard
+      title="Authenticator-App"
+      :flow="FLOWS.totpAdd"
+      action="Einrichten"
+      saved-message="Authenticator-App eingerichtet."
+      @done="loadAuthenticators"
+    >
+      <p v-if="totpDevices.length">
+        Eingerichtet seit {{ formatDate(totpDevices[0].created) }}. Du kannst dich mit den Codes aus
+        deiner App anmelden.
+      </p>
+      <p v-else>
+        Codes aus einer App wie Google Authenticator, Microsoft Authenticator oder 1Password.
+      </p>
+    </FlowCard>
+
+    <FlowCard
       title="Konto sperren"
       :flow="FLOWS.lockdown"
       action="Sperren"
@@ -91,7 +107,7 @@
 import AccountPage from '@/components/AccountPage.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import FlowCard from '@/components/FlowCard.vue'
-import { FLOWS, fetchPasskeys, renamePasskey } from '@/lib/authentik.js'
+import { FLOWS, fetchAuthenticators, fetchPasskeys, renamePasskey } from '@/lib/authentik.js'
 import { useAuthStore } from '@/stores/auth.js'
 
 export default {
@@ -102,6 +118,7 @@ export default {
       FLOWS,
       passkeys: [],
       passkeysError: '',
+      authenticators: [],
       renaming: null,
       newName: '',
       renameError: '',
@@ -113,15 +130,26 @@ export default {
     authStore() {
       return useAuthStore()
     },
+    totpDevices() {
+      return this.authenticators.filter((a) => a.type.toLowerCase().endsWith('.totpdevice'))
+    },
   },
   mounted() {
     this.loadPasskeys()
+    this.loadAuthenticators()
   },
   methods: {
     async loadPasskeys() {
       try {
         this.passkeys = await fetchPasskeys()
         this.passkeysError = ''
+      } catch (err) {
+        this.passkeysError = err.message
+      }
+    },
+    async loadAuthenticators() {
+      try {
+        this.authenticators = await fetchAuthenticators()
       } catch (err) {
         this.passkeysError = err.message
       }

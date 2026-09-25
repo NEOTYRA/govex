@@ -4,6 +4,7 @@ export const FLOWS = {
   profile: 'govex-profile',
   passwordChange: 'govex-password-change',
   passkeyAdd: 'govex-passkey-add',
+  totpAdd: 'govex-totp-add',
   lockdown: 'govex-lockdown',
   logout: 'govex-logout',
 }
@@ -38,6 +39,14 @@ export async function fetchPasskeys() {
     throw new Error('Passkeys konnten nicht geladen werden.')
   }
   return data.results
+}
+
+export async function fetchAuthenticators() {
+  const { response, data } = await request('/api/v3/authenticators/all/')
+  if (!response.ok) {
+    throw new Error('Zwei-Faktor-Methoden konnten nicht geladen werden.')
+  }
+  return data
 }
 
 export async function renamePasskey(pk, name) {

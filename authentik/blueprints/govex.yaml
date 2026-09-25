@@ -79,6 +79,14 @@ entries:
       resident_key_requirement: preferred
       max_attempts: 5
 
+  - model: authentik_stages_authenticator_totp.authenticatortotpstage
+    id: totp-setup
+    identifiers:
+      name: govex-totp-setup
+    attrs:
+      friendly_name: Authenticator-App
+      digits: "6"
+
   - model: authentik_stages_authenticator_validate.authenticatorvalidatestage
     id: webauthn-validate
     identifiers:
@@ -86,9 +94,11 @@ entries:
     attrs:
       device_classes:
         - webauthn
+        - totp
       not_configured_action: configure
       configuration_stages:
         - !KeyOf webauthn-setup
+        - !KeyOf totp-setup
       webauthn_user_verification: required
       last_auth_threshold: seconds=0
 
@@ -423,6 +433,29 @@ entries:
     identifiers:
       stage: !KeyOf webauthn-setup
       target: !KeyOf passkey-add-flow
+      order: 20
+
+  - model: authentik_flows.flow
+    id: totp-add-flow
+    identifiers:
+      slug: govex-totp-add
+    attrs:
+      name: govex - Authenticator-App einrichten
+      title: Authenticator-App einrichten
+      designation: stage_configuration
+      authentication: require_authenticated
+      denied_action: message
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      stage: !KeyOf webauthn-validate
+      target: !KeyOf totp-add-flow
+      order: 10
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      stage: !KeyOf totp-setup
+      target: !KeyOf totp-add-flow
       order: 20
 
   - model: authentik_flows.flow

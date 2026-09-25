@@ -23,6 +23,7 @@ export default defineConfig({
       '/api/v3/flows/executor/': { target: 'http://authentik-server:9000' },
       '/api/v3/core/users/me/': { target: 'http://authentik-server:9000' },
       '/api/v3/authenticators/webauthn/': { target: 'http://authentik-server:9000' },
+      '/api/v3/authenticators/all/': { target: 'http://authentik-server:9000' },
       '/application/o/': { target: 'http://authentik-server:9000' },
       '/flows/-/': { target: 'http://authentik-server:9000' },
       '/api': {

@@ -94,12 +94,73 @@
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
   </div>
 
-  <div v-else-if="challenge?.component === 'ak-stage-authenticator-validate'">
-    <p class="text-sm">Bestätige mit deinem Passkey, dass du es bist.</p>
+  <div
+    v-else-if="
+      challenge?.component === 'ak-stage-authenticator-validate' &&
+      !challenge.device_challenges.length
+    "
+  >
+    <p class="text-sm">
+      Richte einen zweiten Faktor ein. Du brauchst ihn bei jeder Anmeldung zusätzlich zum Passwort.
+    </p>
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
-    <BaseButton variant="primary" block class="mt-6" :disabled="loading" @click="onValidatePasskey">
-      Mit Passkey bestätigen
-    </BaseButton>
+    <div class="mt-6 flex flex-col gap-2">
+      <BaseButton
+        v-for="stage in configurationStages"
+        :key="stage.pk"
+        block
+        :disabled="loading"
+        @click="submit({ selected_stage: stage.pk })"
+      >
+        {{ methodLabel(stage.meta_model_name) }}
+      </BaseButton>
+    </div>
+  </div>
+
+  <div v-else-if="challenge?.component === 'ak-stage-authenticator-validate'">
+    <div v-if="deviceClasses.length > 1" class="mb-4 flex flex-wrap gap-2">
+      <BaseButton
+        v-for="deviceClass in deviceClasses"
+        :key="deviceClass"
+        size="sm"
+        :variant="method === deviceClass ? 'primary' : 'neutral'"
+        @click="method = deviceClass"
+      >
+        {{ METHOD_LABELS[deviceClass] }}
+      </BaseButton>
+    </div>
+
+    <template v-if="method === 'webauthn'">
+      <p class="text-sm">Bestätige mit deinem Passkey, dass du es bist.</p>
+      <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
+      <BaseButton
+        variant="primary"
+        block
+        class="mt-6"
+        :disabled="loading"
+        @click="onValidatePasskey"
+      >
+        Mit Passkey bestätigen
+      </BaseButton>
+    </template>
+
+    <form v-else class="fieldset" @submit.prevent="submit({ code: fields.code })">
+      <p class="text-sm">Gib den Code aus deiner Authenticator-App ein.</p>
+      <label class="label mt-4" for="flow-code">Code</label>
+      <input
+        id="flow-code"
+        v-model="fields.code"
+        type="text"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        class="input w-full"
+        required
+      />
+      <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
+      <BaseButton type="submit" variant="primary" block class="mt-6" :disabled="loading">
+        Bestätigen
+      </BaseButton>
+    </form>
   </div>
 
   <div v-else-if="challenge?.component === 'ak-stage-authenticator-webauthn'">
@@ -112,6 +173,40 @@
       Passkey einrichten
     </BaseButton>
   </div>
+
+  <form
+    v-else-if="challenge?.component === 'ak-stage-authenticator-totp'"
+    class="fieldset"
+    @submit.prevent="submit({ code: fields.code })"
+  >
+    <p class="text-sm">
+      Scanne den QR-Code mit deiner Authenticator-App, zum Beispiel Google Authenticator, Microsoft
+      Authenticator oder 1Password, und gib den angezeigten Code ein.
+    </p>
+    <img
+      v-if="qrCode"
+      :src="qrCode"
+      alt="QR-Code für die Authenticator-App"
+      class="mx-auto mt-4 size-48"
+    />
+    <p class="mt-2 text-center text-xs text-govex-muted break-all">
+      Schlüssel zum Abtippen: <span class="font-mono">{{ totpSecret }}</span>
+    </p>
+    <label class="label mt-4" for="flow-totp-code">Code</label>
+    <input
+      id="flow-totp-code"
+      v-model="fields.code"
+      type="text"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      class="input w-full"
+      required
+    />
+    <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
+    <BaseButton type="submit" variant="primary" block class="mt-6" :disabled="loading">
+      Bestätigen
+    </BaseButton>
+  </form>
 
   <div v-else-if="challenge?.component === 'ak-stage-access-denied'">
     <p class="text-error text-sm">{{ challenge.error_message || 'Zugriff verweigert.' }}</p>
@@ -128,9 +223,15 @@
 </template>
 
 <script>
+import QRCode from 'qrcode'
 import BaseButton from '@/components/BaseButton.vue'
 import { FlowRun, errorsByField } from '@/lib/authentik.js'
 import { createCredential, getAssertion, isWebAuthnSupported } from '@/lib/webauthn.js'
+
+const METHOD_LABELS = {
+  webauthn: 'Passkey',
+  totp: 'Authenticator-App',
+}
 
 const ALERT_CLASSES = {
   alert_info: 'alert-info',
@@ -150,7 +251,10 @@ export default {
   data() {
     return {
       ALERT_CLASSES,
+      METHOD_LABELS,
       challenge: null,
+      method: null,
+      qrCode: '',
       loading: false,
       error: '',
       fieldErrors: {},
@@ -158,6 +262,19 @@ export default {
     }
   },
   computed: {
+    deviceClasses() {
+      const available = (this.challenge?.device_challenges ?? []).map((c) => c.device_class)
+      return Object.keys(METHOD_LABELS).filter((deviceClass) => available.includes(deviceClass))
+    },
+    configurationStages() {
+      const order = Object.keys(METHOD_LABELS)
+      const rank = (stage) => order.findIndex((c) => stage.meta_model_name.includes(c))
+      return [...(this.challenge?.configuration_stages ?? [])].sort((a, b) => rank(a) - rank(b))
+    },
+    totpSecret() {
+      if (!this.challenge?.config_url) return ''
+      return new URL(this.challenge.config_url).searchParams.get('secret') ?? ''
+    },
     promptFields() {
       return [...(this.challenge?.fields ?? [])].sort((a, b) => a.order - b.order)
     },
@@ -166,6 +283,10 @@ export default {
     this.start()
   },
   methods: {
+    methodLabel(metaModelName) {
+      const deviceClass = Object.keys(METHOD_LABELS).find((c) => metaModelName.includes(c))
+      return METHOD_LABELS[deviceClass] ?? metaModelName
+    },
     inputType(type) {
       if (type === 'username') return 'text'
       return ['email', 'password', 'number', 'date'].includes(type) ? type : 'text'
@@ -185,7 +306,10 @@ export default {
     },
     async show(next) {
       const errors = errorsByField(next)
-      this.error = errors.non_field_errors ?? ''
+      this.error =
+        next.component === 'ak-stage-prompt'
+          ? (errors.non_field_errors ?? '')
+          : (errors.non_field_errors ?? Object.values(errors)[0] ?? '')
       this.fieldErrors = errors
 
       if (next.component === 'xak-flow-redirect') {
@@ -202,6 +326,15 @@ export default {
           fields.uid_field = next.pending_user_identifier ?? ''
         }
         this.fields = fields
+      }
+      if (next.component === 'ak-stage-authenticator-validate') {
+        const available = (next.device_challenges ?? []).map((c) => c.device_class)
+        if (!available.includes(this.method)) {
+          this.method = Object.keys(METHOD_LABELS).find((c) => available.includes(c)) ?? null
+        }
+      }
+      if (next.component === 'ak-stage-authenticator-totp') {
+        this.qrCode = await QRCode.toDataURL(next.config_url, { margin: 1, width: 384 })
       }
       if (next.component === 'ak-stage-identification') this.fields.password = ''
 
