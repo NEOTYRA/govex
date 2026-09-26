@@ -1,0 +1,49 @@
+version: 1
+metadata:
+  name: govex - account sync
+entries:
+  - model: authentik_blueprints.metaapplyblueprint
+    attrs:
+      identifiers:
+        name: govex
+      required: true
+
+  - model: authentik_policies_expression.expressionpolicy
+    id: notify-update-policy
+    identifiers:
+      name: govex-notify-account-update
+    attrs:
+      expression: !Format
+        - |
+          %s
+
+          failed = notify_connected_apps(request.user, "updated")
+          if failed:
+              ak_logger.warning("account update not delivered", apps=failed, user=request.user.username)
+          return True
+        - !File /blueprints/govex/connected_apps.py
+
+  - model: authentik_stages_redirect.redirectstage
+    id: profile-done
+    identifiers:
+      name: govex-profile-done
+    attrs:
+      mode: static
+      target_static: /
+      keep_context: false
+
+  - model: authentik_flows.flowstagebinding
+    id: profile-done-binding
+    identifiers:
+      target: !Find [authentik_flows.flow, [slug, govex-profile]]
+      stage: !KeyOf profile-done
+      order: 40
+    attrs:
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf profile-done-binding
+      policy: !KeyOf notify-update-policy
+      order: 0

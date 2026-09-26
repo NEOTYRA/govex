@@ -1,24 +1,35 @@
 APPS = [
-    ("wintersehn", "GOVEX_WINTERSEHN_CLIENT_ID", "GOVEX_WINTERSEHN_ACCOUNT_DELETED_URL"),
+    (
+        "wintersehn",
+        "GOVEX_WINTERSEHN_CLIENT_ID",
+        {
+            "deleted": "GOVEX_WINTERSEHN_ACCOUNT_DELETED_URL",
+            "updated": "GOVEX_WINTERSEHN_ACCOUNT_UPDATED_URL",
+        },
+    ),
 ]
 
 
-def notify_account_deletion(user):
+def notify_connected_apps(user, event):
     import hashlib
     import hmac
     import json
     import os
     import time
 
+    from authentik.core.models import User
     from authentik.lib.utils.http import get_http_session
     from authentik.providers.oauth2.models import OAuth2Provider
 
+    user = User.objects.get(pk=user.pk)
     payload = {"sub": str(user.uuid), "govex_id": user.attributes.get("govex_id")}
+    if event == "updated":
+        payload.update(username=user.username, email=user.email)
     body = json.dumps(payload, separators=(",", ":"))
 
     failed = []
-    for name, client_id_env, url_env in APPS:
-        url = os.environ.get(url_env)
+    for name, client_id_env, url_envs in APPS:
+        url = os.environ.get(url_envs[event])
         if not url:
             continue
         provider = OAuth2Provider.objects.filter(client_id=os.environ.get(client_id_env)).first()

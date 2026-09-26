@@ -48,7 +48,7 @@ entries:
 
           if not request.context.get("prompt_data", {}).get("delete_confirm"):
               return False
-          failed = notify_account_deletion(request.user)
+          failed = notify_connected_apps(request.user, "deleted")
           if failed:
               ak_message(
                   "Dein Konto konnte in " + ", ".join(failed) + " nicht gelöscht werden. "
@@ -56,7 +56,7 @@ entries:
               )
               return False
           return True
-        - !File /blueprints/govex/account_deletion.py
+        - !File /blueprints/govex/connected_apps.py
 
   - model: authentik_stages_prompt.promptstage
     id: delete-prompt
