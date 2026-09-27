@@ -4,6 +4,7 @@
       :slug="FLOWS.enrollment"
       :query="query"
       submit-label="Registrieren"
+      :submit-icon="enterIcon"
       @done="finishLogin($router, $event)"
     />
     <p class="text-sm mt-4 text-center text-govex-muted">
@@ -18,6 +19,7 @@
 <script>
 import BaseCard from '@/components/BaseCard.vue'
 import FlowExecutor from '@/components/FlowExecutor.vue'
+import enterIcon from '@/assets/icons/enter.svg'
 import { RouterLink } from 'vue-router'
 import { FLOWS } from '@/lib/authentik.js'
 import { finishLogin, flowQuery } from '@/lib/navigation.js'
@@ -27,6 +29,7 @@ export default {
   components: { BaseCard, FlowExecutor, RouterLink },
   data() {
     return {
+      enterIcon,
       FLOWS,
       query: flowQuery(),
     }

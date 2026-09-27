@@ -15,7 +15,10 @@
       </template>
       <template v-else-if="active">
         <FlowExecutor :slug="flow" :submit-label="submitLabel" @done="onDone" />
-        <BaseButton block class="mt-2" @click="active = false">Abbrechen</BaseButton>
+        <BaseButton block class="mt-2 gap-2" @click="active = false">
+          <MaskIcon :src="crossIcon" class="size-4" />
+          Abbrechen
+        </BaseButton>
       </template>
       <template v-else>
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -29,9 +32,10 @@
           <BaseButton
             :variant="buttonVariant"
             :outline="buttonOutline"
-            class="shrink-0"
+            class="shrink-0 gap-2"
             @click="open"
           >
+            <MaskIcon v-if="icon" :src="icon" class="size-4" />
             {{ action }}
           </BaseButton>
         </div>
@@ -45,14 +49,17 @@
 import BaseButton from '@/components/BaseButton.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import FlowExecutor from '@/components/FlowExecutor.vue'
+import MaskIcon from '@/components/MaskIcon.vue'
+import crossIcon from '@/assets/icons/cross.svg'
 
 export default {
   name: 'FlowCard',
-  components: { BaseButton, BaseCard, FlowExecutor },
+  components: { BaseButton, BaseCard, FlowExecutor, MaskIcon },
   props: {
     title: { type: String, required: true },
     flow: { type: String, required: true },
     action: { type: String, required: true },
+    icon: { type: String, default: '' },
     savedMessage: { type: String, default: 'Gespeichert.' },
     submitLabel: { type: String, default: 'Speichern' },
     buttonVariant: { type: String, default: 'neutral' },
@@ -63,6 +70,7 @@ export default {
   emits: ['open', 'done'],
   data() {
     return {
+      crossIcon,
       active: false,
       saved: false,
     }

@@ -34,7 +34,8 @@
 
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
 
-    <BaseButton type="submit" variant="primary" block class="mt-6" :disabled="loading">
+    <BaseButton type="submit" variant="primary" block class="mt-6 gap-2" :disabled="loading">
+      <MaskIcon v-if="submitIcon" :src="submitIcon" class="size-4" />
       {{ submitLabel }}
     </BaseButton>
   </form>
@@ -93,7 +94,8 @@
 
     <p v-if="error" class="text-error text-sm mt-3">{{ error }}</p>
 
-    <BaseButton type="submit" variant="primary" block class="mt-6" :disabled="loading">
+    <BaseButton type="submit" variant="primary" block class="mt-6 gap-2" :disabled="loading">
+      <MaskIcon v-if="submitIcon" :src="submitIcon" class="size-4" />
       {{ submitLabel }}
     </BaseButton>
   </form>
@@ -146,10 +148,11 @@
       <BaseButton
         variant="primary"
         block
-        class="mt-6"
+        class="mt-6 gap-2"
         :disabled="loading"
         @click="onValidatePasskey"
       >
+        <MaskIcon :src="keyHoleIcon" class="size-4" />
         Mit Passkey bestätigen
       </BaseButton>
     </template>
@@ -236,6 +239,8 @@
 import QRCode from 'qrcode'
 import AvatarPicker from '@/components/AvatarPicker.vue'
 import BaseButton from '@/components/BaseButton.vue'
+import MaskIcon from '@/components/MaskIcon.vue'
+import keyHoleIcon from '@/assets/icons/key-hole.svg'
 import { FlowRun, META_FIELDS, errorsByField } from '@/lib/authentik.js'
 import { createCredential, getAssertion, isWebAuthnSupported } from '@/lib/webauthn.js'
 
@@ -252,15 +257,17 @@ const ALERT_CLASSES = {
 
 export default {
   name: 'FlowExecutor',
-  components: { AvatarPicker, BaseButton },
+  components: { AvatarPicker, BaseButton, MaskIcon },
   props: {
     slug: { type: String, required: true },
     query: { type: String, default: '' },
     submitLabel: { type: String, default: 'Weiter' },
+    submitIcon: { type: String, default: '' },
   },
   emits: ['done'],
   data() {
     return {
+      keyHoleIcon,
       ALERT_CLASSES,
       META_FIELDS,
       METHOD_LABELS,

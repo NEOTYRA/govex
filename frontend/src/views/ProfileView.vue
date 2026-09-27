@@ -4,6 +4,7 @@
       title="Meta"
       :flow="FLOWS.meta"
       action="Bearbeiten"
+      :icon="pencilIcon"
       :loading="!authStore.ready"
       @done="authStore.fetchMe()"
     >
@@ -35,6 +36,7 @@
       title="Konto"
       :flow="FLOWS.profile"
       action="Bearbeiten"
+      :icon="pencilIcon"
       :loading="!authStore.ready"
       @done="authStore.fetchMe()"
     >
@@ -53,6 +55,7 @@
 <script>
 import AccountPage from '@/components/AccountPage.vue'
 import FlowCard from '@/components/FlowCard.vue'
+import pencilIcon from '@/assets/icons/pencil.svg'
 import { FLOWS } from '@/lib/authentik.js'
 import { avatarSrc, hasAvatar } from '@/lib/avatars.js'
 import { useAuthStore } from '@/stores/auth.js'
@@ -61,7 +64,7 @@ export default {
   name: 'ProfileView',
   components: { AccountPage, FlowCard },
   data() {
-    return { FLOWS }
+    return { FLOWS, pencilIcon }
   },
   computed: {
     authStore() {
