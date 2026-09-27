@@ -1,0 +1,67 @@
+version: 1
+metadata:
+  name: govex - attestation
+entries:
+  # Connected apps keep the consents to their own contracts and push the
+  # status here, signed with their own key. govex stores it on the account
+  # it names and shows it, but can never forge it. Public, since the app's
+  # server calls it; only a valid signature gets anything stored.
+  - model: authentik_stages_prompt.prompt
+    id: field-attestation
+    identifiers:
+      name: govex-field-attestation
+    attrs:
+      field_key: attestation
+      label: Vertragsstatus
+      type: text
+      required: true
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 0
+
+  - model: authentik_policies_expression.expressionpolicy
+    id: attestation-policy
+    identifiers:
+      name: govex-store-wintersehn-attestation
+    attrs:
+      expression: !Format
+        - |
+          WINTERSEHN_KEYS = """%s"""
+
+          %s
+
+          token = request.context.get("prompt_data", {}).get("attestation") or ""
+          error = store_wintersehn_attestation(token)
+          if error:
+              ak_message(error)
+              return False
+          return True
+        - !File /blueprints/govex/wintersehn-consent-keys.pem
+        - !File /blueprints/govex/wintersehn_attestation.py
+
+  - model: authentik_stages_prompt.promptstage
+    id: attestation-prompt
+    identifiers:
+      name: govex-attestation-prompt
+    attrs:
+      fields:
+        - !KeyOf field-attestation
+      validation_policies:
+        - !KeyOf attestation-policy
+
+  - model: authentik_flows.flow
+    id: attestation-flow
+    identifiers:
+      slug: govex-attestation
+    attrs:
+      name: govex - Vertragsstatus
+      title: Vertragsstatus
+      designation: stage_configuration
+      authentication: none
+      denied_action: message
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      stage: !KeyOf attestation-prompt
+      target: !KeyOf attestation-flow
+      order: 10

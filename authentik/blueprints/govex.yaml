@@ -519,9 +519,10 @@ entries:
       name: govex-meta
     attrs:
       scope_name: govex_meta
-      description: Vorname, Nachname, Geburtsdatum und Profilbild
+      description: Vorname, Nachname, Geburtsdatum, Profilbild und Vertragsstatus
       expression: |
-        return {"meta": request.user.attributes.get("settings", {}).get("meta", {})}
+        settings = request.user.attributes.get("settings", {})
+        return {"meta": settings.get("meta", {}), "attestations": settings.get("attestations", {})}
 
   - model: authentik_providers_oauth2.oauth2provider
     id: wintersehn-provider

@@ -4,7 +4,7 @@
       :slug="FLOWS.enrollment"
       :query="query"
       submit-label="Registrieren"
-      @done="finishFlow"
+      @done="finishLogin($router, $event)"
     />
     <p class="text-sm mt-4 text-center text-govex-muted">
       Bereits ein Konto?
@@ -20,7 +20,7 @@ import BaseCard from '@/components/BaseCard.vue'
 import FlowExecutor from '@/components/FlowExecutor.vue'
 import { RouterLink } from 'vue-router'
 import { FLOWS } from '@/lib/authentik.js'
-import { finishFlow, flowQuery } from '@/lib/navigation.js'
+import { finishLogin, flowQuery } from '@/lib/navigation.js'
 
 export default {
   name: 'SignupView',
@@ -32,7 +32,7 @@ export default {
     }
   },
   methods: {
-    finishFlow,
+    finishLogin,
   },
 }
 </script>

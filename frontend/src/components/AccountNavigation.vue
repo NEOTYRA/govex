@@ -48,6 +48,7 @@ import BaseButton from '@/components/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth.js'
 import fingerprintIcon from '@/assets/icons/fingerprint.svg'
 import shieldIcon from '@/assets/icons/shield.svg'
+import documentSignedIcon from '@/assets/icons/document-signed.svg'
 import exitIcon from '@/assets/icons/exit.svg'
 import packageJson from '../../package.json'
 
@@ -65,6 +66,7 @@ export default {
       items: [
         { name: 'profile', label: 'Profil', icon: fingerprintIcon },
         { name: 'security', label: 'Sicherheit', icon: shieldIcon },
+        { name: 'contracts', label: 'Verträge', icon: documentSignedIcon },
       ],
     }
   },

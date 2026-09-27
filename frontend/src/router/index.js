@@ -2,11 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth.js'
 import { FLOWS } from '@/lib/authentik.js'
+import { contracts } from '@/data/legal/index.js'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import SignupView from '@/views/SignupView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import SecurityView from '@/views/SecurityView.vue'
+import ContractsView from '@/views/ContractsView.vue'
+import ContractView from '@/views/ContractView.vue'
 
 const authentikPaths = [
   {
@@ -37,6 +40,20 @@ const router = createRouter({
       component: SecurityView,
       meta: { requiresAuth: true, accountNavigation: true },
     },
+    {
+      path: '/account/contracts',
+      name: 'contracts',
+      component: ContractsView,
+      meta: { requiresAuth: true, accountNavigation: true },
+    },
+    {
+      path: '/contracts/neotyra/:page',
+      name: 'contract',
+      component: ContractView,
+      props: true,
+      meta: { legal: true },
+      beforeEnter: (to) => Boolean(contracts[to.params.page]) || { name: 'home' },
+    },
     ...authentikPaths,
   ],
 })
@@ -45,6 +62,14 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   if (!auth.ready) {
     return true
+  }
+  const onGate = to.name === 'contract' && to.params.page === auth.missingConsent
+  if (auth.missingConsent && !onGate) {
+    return {
+      name: 'contract',
+      params: { page: auth.missingConsent },
+      query: { next: to.query.next ?? to.fullPath },
+    }
   }
   if (to.name === 'home' && auth.isAuthenticated) {
     return { name: 'profile' }

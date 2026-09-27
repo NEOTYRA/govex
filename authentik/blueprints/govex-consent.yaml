@@ -1,0 +1,103 @@
+version: 1
+metadata:
+  name: govex - consent
+entries:
+  - model: authentik_blueprints.metaapplyblueprint
+    attrs:
+      identifiers:
+        name: govex - account sync
+      required: true
+
+  # Lives in `attributes.settings.consent.neotyra` because `settings` is the only
+  # part of the attributes a user can read about themselves (users/me).
+  - model: authentik_stages_prompt.prompt
+    id: field-consent-neotyra-privacy
+    identifiers:
+      name: govex-field-consent-neotyra-privacy
+    attrs:
+      field_key: attributes.settings.consent.neotyra.privacy
+      label: Datenschutzerklärung
+      type: checkbox
+      required: false
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 0
+
+  - model: authentik_stages_prompt.prompt
+    id: field-consent-neotyra-terms
+    identifiers:
+      name: govex-field-consent-neotyra-terms
+    attrs:
+      field_key: attributes.settings.consent.neotyra.terms
+      label: Nutzungsrichtlinien
+      type: checkbox
+      required: false
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 1
+
+  - model: authentik_stages_prompt.prompt
+    id: field-consent-neotyra-disclaimer
+    identifiers:
+      name: govex-field-consent-neotyra-disclaimer
+    attrs:
+      field_key: attributes.settings.consent.neotyra.disclaimer
+      label: Haftungsausschluss
+      type: checkbox
+      required: false
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 2
+
+  - model: authentik_stages_prompt.prompt
+    id: field-consent-neotyra-cookies
+    identifiers:
+      name: govex-field-consent-neotyra-cookies
+    attrs:
+      field_key: attributes.settings.consent.neotyra.cookies
+      label: Cookierichtlinie
+      type: checkbox
+      required: false
+      initial_value_expression: false
+      placeholder_expression: false
+      order: 3
+
+  - model: authentik_stages_prompt.promptstage
+    id: consent-prompt
+    identifiers:
+      name: govex-consent-prompt
+    attrs:
+      fields:
+        - !KeyOf field-consent-neotyra-privacy
+        - !KeyOf field-consent-neotyra-terms
+        - !KeyOf field-consent-neotyra-disclaimer
+        - !KeyOf field-consent-neotyra-cookies
+
+  - model: authentik_flows.flow
+    id: consent-flow
+    identifiers:
+      slug: govex-consent
+    attrs:
+      name: govex - Zustimmung
+      title: Zustimmen
+      designation: stage_configuration
+      authentication: require_authenticated
+      denied_action: message
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      stage: !KeyOf consent-prompt
+      target: !KeyOf consent-flow
+      order: 10
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      stage: !Find [authentik_stages_user_write.userwritestage, [name, govex-user-update]]
+      target: !KeyOf consent-flow
+      order: 20
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      stage: !Find [authentik_stages_redirect.redirectstage, [name, govex-profile-done]]
+      target: !KeyOf consent-flow
+      order: 30
