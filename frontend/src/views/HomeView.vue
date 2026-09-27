@@ -11,16 +11,24 @@
       Dein zentrales Konto für alle angeschlossenen Apps. govex verwaltet nur deinen Benutzernamen,
       deine Email, dein Passwort und deine Passkeys — sonst nichts.
     </p>
-    <BaseButton variant="primary" block to="/login" class="mt-6">Anmelden</BaseButton>
+    <BaseButton variant="primary" block to="/login" class="mt-6 gap-2">
+      <MaskIcon :src="enterIcon" class="size-4" />
+      Anmelden
+    </BaseButton>
   </BaseCard>
 </template>
 
 <script>
 import BaseButton from '@/components/BaseButton.vue'
 import BaseCard from '@/components/BaseCard.vue'
+import MaskIcon from '@/components/MaskIcon.vue'
+import enterIcon from '@/assets/icons/enter.svg'
 
 export default {
   name: 'HomeView',
-  components: { BaseButton, BaseCard },
+  components: { BaseButton, BaseCard, MaskIcon },
+  data() {
+    return { enterIcon }
+  },
 }
 </script>

@@ -14,7 +14,10 @@
     </div>
     <p v-if="error" class="mt-6 text-sm text-error">{{ error }}</p>
     <div v-if="pending" class="mt-6 flex gap-4">
-      <BaseButton class="flex-1" :disabled="accepting" @click="onCancel">Abbrechen</BaseButton>
+      <BaseButton class="flex-1 gap-2" :disabled="accepting" @click="onCancel">
+        <MaskIcon :src="crossIcon" class="size-4" />
+        Abbrechen
+      </BaseButton>
       <BaseButton variant="primary" class="flex-1" :disabled="accepting" @click="onAccept">
         Zustimmen
       </BaseButton>
@@ -24,6 +27,8 @@
 
 <script>
 import BaseButton from '@/components/BaseButton.vue'
+import MaskIcon from '@/components/MaskIcon.vue'
+import crossIcon from '@/assets/icons/cross.svg'
 import LegalPage from '@/components/legal/LegalPage.vue'
 import LegalSection from '@/components/legal/LegalSection.vue'
 import { contracts, illustrations } from '@/data/legal/index.js'
@@ -32,12 +37,12 @@ import { useAuthStore } from '@/stores/auth.js'
 
 export default {
   name: 'ContractView',
-  components: { BaseButton, LegalPage, LegalSection },
+  components: { BaseButton, LegalPage, LegalSection, MaskIcon },
   props: {
     page: { type: String, required: true },
   },
   data() {
-    return { illustrations, accepting: false, error: '' }
+    return { crossIcon, illustrations, accepting: false, error: '' }
   },
   computed: {
     authStore() {

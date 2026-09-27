@@ -4,6 +4,7 @@
       title="Passwort"
       :flow="FLOWS.passwordChange"
       action="Ändern"
+      :icon="pencilIcon"
       saved-message="Passwort geändert."
       :loading="!authStore.ready"
     >
@@ -14,6 +15,7 @@
       title="Passkeys"
       :flow="FLOWS.passkeyAdd"
       action="Hinzufügen"
+      :icon="plusIcon"
       saved-message="Passkey hinzugefügt."
       :loading="passkeysLoading"
       @done="loadPasskeys"
@@ -46,7 +48,10 @@
                 <BaseButton type="submit" variant="primary" size="sm" :disabled="saving">
                   Speichern
                 </BaseButton>
-                <BaseButton size="sm" @click="renaming = null">Abbrechen</BaseButton>
+                <BaseButton size="sm" @click="renaming = null">
+                  <MaskIcon :src="crossIcon" class="size-3" />
+                  Abbrechen
+                </BaseButton>
               </div>
             </form>
             <div v-else class="flex items-center justify-between gap-4">
@@ -60,6 +65,7 @@
                 </span>
               </div>
               <BaseButton variant="ghost" size="sm" class="shrink-0" @click="startRename(passkey)">
+                <MaskIcon :src="pencilIcon" class="size-3" />
                 Umbenennen
               </BaseButton>
             </div>
@@ -76,6 +82,7 @@
       title="Authenticator-App"
       :flow="FLOWS.totpAdd"
       action="Einrichten"
+      :icon="workflowIcon"
       saved-message="Authenticator-App eingerichtet."
       :loading="authenticatorsLoading"
       @done="loadAuthenticators"
@@ -93,6 +100,7 @@
       title="Konto sperren"
       :flow="FLOWS.lockdown"
       action="Sperren"
+      :icon="banIcon"
       submit-label="Konto jetzt sperren"
       saved-message=""
       button-variant="error"
@@ -112,6 +120,7 @@
       title="Konto löschen"
       :flow="FLOWS.accountDelete"
       action="Löschen"
+      :icon="trashIcon"
       submit-label="Konto endgültig löschen"
       saved-message=""
       button-variant="error"
@@ -132,15 +141,28 @@
 import AccountPage from '@/components/AccountPage.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import FlowCard from '@/components/FlowCard.vue'
+import MaskIcon from '@/components/MaskIcon.vue'
+import banIcon from '@/assets/icons/ban.svg'
+import crossIcon from '@/assets/icons/cross.svg'
+import pencilIcon from '@/assets/icons/pencil.svg'
+import plusIcon from '@/assets/icons/plus.svg'
+import trashIcon from '@/assets/icons/trash.svg'
+import workflowIcon from '@/assets/icons/workflow-alt.svg'
 import { FLOWS, fetchAuthenticators, fetchPasskeys, renamePasskey } from '@/lib/authentik.js'
 import { useAuthStore } from '@/stores/auth.js'
 
 export default {
   name: 'SecurityView',
-  components: { AccountPage, BaseButton, FlowCard },
+  components: { AccountPage, BaseButton, FlowCard, MaskIcon },
   data() {
     return {
       FLOWS,
+      banIcon,
+      crossIcon,
+      pencilIcon,
+      plusIcon,
+      trashIcon,
+      workflowIcon,
       passkeys: [],
       passkeysLoading: true,
       passkeysError: '',
