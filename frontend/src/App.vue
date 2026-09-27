@@ -48,8 +48,8 @@
       <AccountNavigation v-if="showNavigation" :open="navOpen" @close="navOpen = false" />
 
       <!-- pt-[117px]: wintersehn's breadcrumb bar (53px) + mt-16 above its cards -->
-      <main class="min-w-0 flex-1 px-6 pb-16" :class="showNavigation ? 'pt-[53px]' : 'pt-[117px]'">
-        <RouterView v-if="showNavigation" />
+      <main class="min-w-0 flex-1 px-6 pb-16" :class="pageLayout ? 'pt-[53px]' : 'pt-[117px]'">
+        <RouterView v-if="pageLayout" />
         <div v-else class="mx-auto flex w-full max-w-100 flex-col gap-6">
           <RouterView />
         </div>
@@ -84,6 +84,9 @@ export default {
     },
     showNavigation() {
       return Boolean(this.$route.meta.accountNavigation)
+    },
+    pageLayout() {
+      return this.showNavigation || Boolean(this.$route.meta.legal)
     },
   },
   watch: {

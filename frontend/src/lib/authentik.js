@@ -9,7 +9,10 @@ export const FLOWS = {
   lockdown: 'govex-lockdown',
   accountDelete: 'govex-account-delete',
   logout: 'govex-logout',
+  consent: 'govex-consent',
 }
+
+export const CONSENT_PAGES = ['privacy', 'terms', 'disclaimer', 'cookies']
 
 // Stored in `attributes.settings`, the only attributes users/me returns.
 export const META_FIELDS = {
