@@ -5,7 +5,7 @@
       <h3 v-else class="my-4 text-xl">NEOTYRA</h3>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <template v-for="page in CONSENT_PAGES" :key="page">
-          <div v-if="!authStore.ready" class="skeleton h-52 w-full rounded-box" />
+          <div v-if="!authStore.ready" class="skeleton h-52 w-full rounded-none" />
           <RouterLink v-else :to="{ name: 'contract', params: { page } }" :class="cardClass">
             <img v-if="illustrations[page]" class="h-24" :src="illustrations[page]" alt="" />
             <div v-else class="h-24 w-32 rounded-box bg-base-200" />
@@ -24,7 +24,7 @@
       <h3 v-else class="my-4 text-xl">Wintersehn</h3>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <template v-for="page in CONSENT_PAGES" :key="page">
-          <div v-if="!wintersehnChecked" class="skeleton h-52 w-full rounded-box" />
+          <div v-if="!wintersehnChecked" class="skeleton h-52 w-full rounded-none" />
           <a v-else :href="`${WINTERSEHN_URL}/${page}`" :class="cardClass">
             <img v-if="illustrations[page]" class="h-24" :src="illustrations[page]" alt="" />
             <div v-else class="h-24 w-32 rounded-box bg-base-200" />
@@ -64,7 +64,7 @@ export default {
       contracts,
       illustrations,
       cardClass:
-        'flex flex-col items-center gap-4 rounded-box border border-solid border-govex-border bg-base-100 p-6 text-center hover:bg-base-200',
+        'flex flex-col items-center gap-4 border border-solid border-govex-border bg-base-100 p-6 text-center hover:bg-base-200',
       wintersehnChecked: false,
       wintersehnInvalid: false,
       wintersehnConsent: {},
