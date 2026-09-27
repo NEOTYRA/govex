@@ -2,12 +2,19 @@ export const FLOWS = {
   authentication: 'govex-authentication',
   enrollment: 'govex-enrollment',
   profile: 'govex-profile',
+  meta: 'govex-meta',
   passwordChange: 'govex-password-change',
   passkeyAdd: 'govex-passkey-add',
   totpAdd: 'govex-totp-add',
   lockdown: 'govex-lockdown',
   accountDelete: 'govex-account-delete',
   logout: 'govex-logout',
+}
+
+// Stored in `attributes.settings`, the only attributes users/me returns.
+export const META_FIELDS = {
+  birthdate: 'attributes.settings.meta.birthdate',
+  avatar: 'attributes.settings.meta.avatar',
 }
 
 function getCookie(name) {

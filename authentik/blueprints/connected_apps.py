@@ -24,7 +24,11 @@ def notify_connected_apps(user, event):
     user = User.objects.get(pk=user.pk)
     payload = {"sub": str(user.uuid), "govex_id": user.attributes.get("govex_id")}
     if event == "updated":
-        payload.update(username=user.username, email=user.email)
+        payload.update(
+            username=user.username,
+            email=user.email,
+            meta=user.attributes.get("settings", {}).get("meta", {}),
+        )
     body = json.dumps(payload, separators=(",", ":"))
 
     failed = []

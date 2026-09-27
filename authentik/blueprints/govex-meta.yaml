@@ -1,0 +1,207 @@
+version: 1
+metadata:
+  name: govex - meta
+entries:
+  - model: authentik_blueprints.metaapplyblueprint
+    attrs:
+      identifiers:
+        name: govex - account sync
+      required: true
+
+  # Meta lives in `attributes.settings.meta` because `settings` is the only
+  # part of the attributes a user can read about themselves (users/me).
+  - model: authentik_stages_prompt.prompt
+    id: field-first-name
+    identifiers:
+      name: govex-field-first-name
+    attrs:
+      field_key: attributes.settings.meta.first_name
+      label: Vorname
+      type: text
+      required: false
+      placeholder: Vorname
+      placeholder_expression: false
+      initial_value: |
+        return user.attributes.get("settings", {}).get("meta", {}).get("first_name", "")
+      initial_value_expression: true
+      order: 0
+
+  - model: authentik_stages_prompt.prompt
+    id: field-last-name
+    identifiers:
+      name: govex-field-last-name
+    attrs:
+      field_key: attributes.settings.meta.last_name
+      label: Nachname
+      type: text
+      required: false
+      placeholder: Nachname
+      placeholder_expression: false
+      initial_value: |
+        return user.attributes.get("settings", {}).get("meta", {}).get("last_name", "")
+      initial_value_expression: true
+      order: 1
+
+  # A text field, not `date`: authentik rejects a blank date, so a birthdate
+  # could never be removed again. The format is checked by birthdate-policy.
+  - model: authentik_stages_prompt.prompt
+    id: field-birthdate
+    identifiers:
+      name: govex-field-birthdate
+    attrs:
+      field_key: attributes.settings.meta.birthdate
+      label: Geburtsdatum
+      type: text
+      required: false
+      placeholder: JJJJ-MM-TT
+      placeholder_expression: false
+      initial_value: |
+        return user.attributes.get("settings", {}).get("meta", {}).get("birthdate", "")
+      initial_value_expression: true
+      order: 2
+
+  # authentik rejects a blank choice value, so "no avatar" is `none`.
+  - model: authentik_stages_prompt.prompt
+    id: field-avatar
+    identifiers:
+      name: govex-field-avatar
+    attrs:
+      field_key: attributes.settings.meta.avatar
+      label: Profilbild
+      type: dropdown
+      required: false
+      placeholder: |
+        labels = {
+            "bee": "Biene",
+            "bison": "Bison",
+            "camel": "Kamel",
+            "cat": "Katze",
+            "chameleon": "Chamäleon",
+            "crab": "Krabbe",
+            "deer": "Hirsch",
+            "dog": "Hund",
+            "dolphin": "Delfin",
+            "duck": "Ente",
+            "elephant": "Elefant",
+            "fish": "Fisch",
+            "flamingo": "Flamingo",
+            "frog": "Frosch",
+            "giraffe": "Giraffe",
+            "hedgehog": "Igel",
+            "hen": "Henne",
+            "hermit-crab": "Einsiedlerkrebs",
+            "hippopotamus": "Nilpferd",
+            "horse": "Pferd",
+            "jellyfish": "Qualle",
+            "kangaroo": "Känguru",
+            "kiwi": "Kiwi",
+            "koala": "Koala",
+            "lion": "Löwe",
+            "llama": "Lama",
+            "lobster": "Hummer",
+            "meerkat": "Erdmännchen",
+            "monkey": "Affe",
+            "octopus": "Oktopus",
+            "ostrich": "Strauss",
+            "owl": "Eule",
+            "panda-bear": "Pandabär",
+            "parrot": "Papagei",
+            "penguin": "Pinguin",
+            "pig": "Schwein",
+            "rabbit": "Kaninchen",
+            "seahorse": "Seepferdchen",
+            "seal": "Robbe",
+            "shark": "Hai",
+            "sheep": "Schaf",
+            "snail": "Schnecke",
+            "snake": "Schlange",
+            "squid": "Tintenfisch",
+            "squirrel": "Eichhörnchen",
+            "swan": "Schwan",
+            "toucan": "Tukan",
+            "turtle": "Schildkröte",
+            "walrus": "Walross",
+            "whale": "Wal",
+        }
+        animals = sorted(labels.items(), key=lambda item: item[1])
+        return [{"value": "none", "label": "Kein Profilbild"}] + [
+            {"value": value, "label": label} for value, label in animals
+        ]
+      placeholder_expression: true
+      initial_value: |
+        return user.attributes.get("settings", {}).get("meta", {}).get("avatar") or "none"
+      initial_value_expression: true
+      order: 3
+
+  - model: authentik_policies_expression.expressionpolicy
+    id: birthdate-policy
+    identifiers:
+      name: govex-valid-birthdate
+    attrs:
+      expression: |
+        from datetime import date
+
+        value = request.context.get("prompt_data", {}).get("attributes.settings.meta.birthdate") or ""
+        if not value.strip():
+            return True
+        try:
+            birthdate = date.fromisoformat(value.strip())
+        except ValueError:
+            ak_message("Das Geburtsdatum ist ungültig.")
+            return False
+        if birthdate > date.today():
+            ak_message("Das Geburtsdatum darf nicht in der Zukunft liegen.")
+            return False
+        return True
+
+  - model: authentik_stages_prompt.promptstage
+    id: meta-prompt
+    identifiers:
+      name: govex-meta-prompt
+    attrs:
+      fields:
+        - !KeyOf field-first-name
+        - !KeyOf field-last-name
+        - !KeyOf field-birthdate
+        - !KeyOf field-avatar
+      validation_policies:
+        - !KeyOf birthdate-policy
+
+  - model: authentik_flows.flow
+    id: meta-flow
+    identifiers:
+      slug: govex-meta
+    attrs:
+      name: govex - Meta
+      title: Meta bearbeiten
+      designation: stage_configuration
+      authentication: require_authenticated
+      denied_action: message
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      stage: !KeyOf meta-prompt
+      target: !KeyOf meta-flow
+      order: 10
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      stage: !Find [authentik_stages_user_write.userwritestage, [name, govex-user-update]]
+      target: !KeyOf meta-flow
+      order: 20
+
+  - model: authentik_flows.flowstagebinding
+    id: meta-done-binding
+    identifiers:
+      stage: !Find [authentik_stages_redirect.redirectstage, [name, govex-profile-done]]
+      target: !KeyOf meta-flow
+      order: 30
+    attrs:
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+
+  - model: authentik_policies.policybinding
+    identifiers:
+      policy: !Find [authentik_policies_expression.expressionpolicy, [name, govex-notify-account-update]]
+      target: !KeyOf meta-done-binding
+      order: 0

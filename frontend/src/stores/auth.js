@@ -6,6 +6,10 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const ready = ref(false)
   const isAuthenticated = computed(() => user.value !== null)
+  const displayName = computed(() => {
+    const meta = user.value?.settings?.meta ?? {}
+    return [meta.first_name, meta.last_name].filter(Boolean).join(' ') || user.value?.username
+  })
 
   async function fetchMe() {
     try {
@@ -27,6 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     ready,
     isAuthenticated,
+    displayName,
     fetchMe,
     logout,
   }
