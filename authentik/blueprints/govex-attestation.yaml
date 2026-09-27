@@ -36,7 +36,7 @@ entries:
               ak_message(error)
               return False
           return True
-        - !File /blueprints/govex/wintersehn-consent-keys.pem
+        - !Env [GOVEX_WINTERSEHN_CONSENT_KEY, ""]
         - !File /blueprints/govex/wintersehn_attestation.py
 
   - model: authentik_stages_prompt.promptstage

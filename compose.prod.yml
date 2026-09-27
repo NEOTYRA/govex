@@ -92,6 +92,7 @@ services:
       GOVEX_NETWORK_BINDING: ${SESSION_NETWORK_BINDING:-no_binding}
       GOVEX_GEOIP_BINDING: ${SESSION_GEOIP_BINDING:-bind_continent}
       GOVEX_MIGRATION_TOKEN: ${GOVEX_MIGRATION_TOKEN:-}
+      GOVEX_WINTERSEHN_CONSENT_KEY: ${WINTERSEHN_CONSENT_KEY:?see .env.example}
 
     depends_on:
       authentik-db:
