@@ -1,6 +1,12 @@
 <template>
-  <AccountPage title="Profil">
-    <FlowCard title="Meta" :flow="FLOWS.meta" action="Bearbeiten" @done="authStore.fetchMe()">
+  <AccountPage title="Profil" :loading="!authStore.ready">
+    <FlowCard
+      title="Meta"
+      :flow="FLOWS.meta"
+      action="Bearbeiten"
+      :loading="!authStore.ready"
+      @done="authStore.fetchMe()"
+    >
       <div class="flex items-center gap-4">
         <img
           class="size-11 shrink-0"
@@ -25,7 +31,13 @@
       </div>
     </FlowCard>
 
-    <FlowCard title="Konto" :flow="FLOWS.profile" action="Bearbeiten" @done="authStore.fetchMe()">
+    <FlowCard
+      title="Konto"
+      :flow="FLOWS.profile"
+      action="Bearbeiten"
+      :loading="!authStore.ready"
+      @done="authStore.fetchMe()"
+    >
       <p class="flex min-w-0 flex-wrap gap-1">
         <span class="shrink-0">Benutzername:</span>
         <span class="min-w-0 truncate text-base-content">{{ authStore.user?.username }}</span>

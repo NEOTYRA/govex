@@ -1,5 +1,9 @@
 <template>
-  <p v-if="loading && !challenge" class="text-sm text-govex-muted">Wird geladen …</p>
+  <div v-if="!challenge && !error" class="flex flex-col gap-2">
+    <div class="skeleton h-4 w-32" />
+    <div class="skeleton h-10 w-full" />
+    <div class="skeleton mt-6 h-10 w-full" />
+  </div>
 
   <form
     v-else-if="challenge?.component === 'ak-stage-identification'"

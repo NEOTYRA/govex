@@ -1,8 +1,19 @@
 <template>
   <section class="mb-10">
-    <h3 class="my-4 text-xl">{{ title }}</h3>
+    <div v-if="loading" class="skeleton my-5 h-5 w-32" />
+    <h3 v-else class="my-4 text-xl">{{ title }}</h3>
     <BaseCard>
-      <template v-if="active">
+      <template v-if="loading">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex w-full flex-col gap-2">
+            <div class="skeleton h-4 w-full" />
+            <div class="skeleton h-4 w-2/3" />
+          </div>
+          <div class="skeleton h-10 w-28 shrink-0" />
+        </div>
+        <slot name="details" />
+      </template>
+      <template v-else-if="active">
         <FlowExecutor :slug="flow" :submit-label="submitLabel" @done="onDone" />
         <BaseButton block class="mt-2" @click="active = false">Abbrechen</BaseButton>
       </template>
@@ -47,6 +58,7 @@ export default {
     buttonVariant: { type: String, default: 'neutral' },
     buttonOutline: { type: Boolean, default: false },
     error: { type: String, default: '' },
+    loading: { type: Boolean, default: false },
   },
   emits: ['open', 'done'],
   data() {

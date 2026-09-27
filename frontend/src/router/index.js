@@ -41,10 +41,10 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach((to) => {
   const auth = useAuthStore()
   if (!auth.ready) {
-    await auth.fetchMe()
+    return true
   }
   if (to.name === 'home' && auth.isAuthenticated) {
     return { name: 'profile' }

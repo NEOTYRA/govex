@@ -14,8 +14,12 @@
       >
         G
       </RouterLink>
-      <div v-if="authStore.isAuthenticated" class="ml-auto flex items-center gap-3 px-6">
-        <span class="text-sm text-white">{{ authStore.displayName }}</span>
+      <div
+        v-if="showNavigation || authStore.isAuthenticated"
+        class="ml-auto flex items-center gap-3 px-6"
+      >
+        <span v-if="!authStore.ready" class="skeleton h-4 w-24" />
+        <span v-else class="text-sm text-white">{{ authStore.displayName }}</span>
         <BaseButton
           variant="ghost"
           shape="square"
@@ -79,7 +83,7 @@ export default {
       return useAuthStore()
     },
     showNavigation() {
-      return Boolean(this.$route.meta.accountNavigation) && this.authStore.isAuthenticated
+      return Boolean(this.$route.meta.accountNavigation)
     },
   },
   watch: {
@@ -87,8 +91,10 @@ export default {
       this.navOpen = false
     },
   },
-  mounted() {
-    this.authStore.fetchMe()
+  async mounted() {
+    await Promise.all([this.authStore.fetchMe(), this.$router.isReady()])
+    const { path, query, hash } = this.$route
+    this.$router.replace({ path, query, hash, force: true })
   },
 }
 </script>
