@@ -32,7 +32,7 @@ def store_wintersehn_attestation(token):
     message = f"{header}.{body}".encode()
     marker = "-----END PUBLIC KEY-----"
     verified = False
-    for block in WINTERSEHN_KEYS.split(marker)[:-1]:
+    for block in WINTERSEHN_KEYS.replace("\\n", "\n").split(marker)[:-1]:
         key = serialization.load_pem_public_key((block.strip() + "\n" + marker).encode())
         try:
             key.verify(der, message, ec.ECDSA(hashes.SHA256()))

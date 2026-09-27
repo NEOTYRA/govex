@@ -100,6 +100,8 @@ services:
       GOVEX_WINTERSEHN_ACCOUNT_DELETED_URL: http://host.docker.internal:8000/api/auth/oidc/account-deleted/
       GOVEX_WINTERSEHN_ACCOUNT_UPDATED_URL: http://host.docker.internal:8000/api/auth/oidc/account-updated/
       GOVEX_MIGRATION_TOKEN: govex-dev-migration-token
+      # Public key matching the dev key in wintersehn's compose.yml.
+      GOVEX_WINTERSEHN_CONSENT_KEY: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENxmoshNKpLzwHguCn1ws/W93dQ2p\nEPm4ppwG7MIsab6MSgAhTfDNgzo8AwycUhHdju4ShCzPfERtoWR2eBO3Tw==\n-----END PUBLIC KEY-----"
       AUTHENTIK_EMAIL__HOST: mailpit
       AUTHENTIK_EMAIL__PORT: 1025
       AUTHENTIK_EMAIL__USE_TLS: "false"

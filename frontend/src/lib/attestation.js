@@ -1,12 +1,19 @@
-// Public keys of wintersehn's consent signing key (accounts/consent.py there),
-// the same as authentik/blueprints/wintersehn-consent-keys.pem. A status that
-// none of them verifies was changed after wintersehn signed it.
-const WINTERSEHN_KEYS = [
+// Public key of wintersehn's consent signing key (accounts/consent.py there),
+// the same as GOVEX_WINTERSEHN_CONSENT_KEY for authentik. A status it doesn't
+// verify was changed after wintersehn signed it. Dev has its own key pair.
+const DEV_KEY =
   '-----BEGIN PUBLIC KEY-----\n' +
-    'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENxmoshNKpLzwHguCn1ws/W93dQ2p\n' +
-    'EPm4ppwG7MIsab6MSgAhTfDNgzo8AwycUhHdju4ShCzPfERtoWR2eBO3Tw==\n' +
-    '-----END PUBLIC KEY-----\n',
-]
+  'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENxmoshNKpLzwHguCn1ws/W93dQ2p\n' +
+  'EPm4ppwG7MIsab6MSgAhTfDNgzo8AwycUhHdju4ShCzPfERtoWR2eBO3Tw==\n' +
+  '-----END PUBLIC KEY-----\n'
+
+const PRODUCTION_KEY =
+  '-----BEGIN PUBLIC KEY-----\n' +
+  'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMfD1W+zp07A8ZzRkue/02ki8lU0l\n' +
+  'p9OhyzgLefKcNB93r2ghdvvoXnxCJIKZqAQbU3NO9GoplRoBlYK50vjy7w==\n' +
+  '-----END PUBLIC KEY-----\n'
+
+const WINTERSEHN_KEYS = [import.meta.env.DEV ? DEV_KEY : PRODUCTION_KEY].filter(Boolean)
 
 function decode(part) {
   const base64 = part.replace(/-/g, '+').replace(/_/g, '/')
