@@ -1,6 +1,6 @@
 <template>
   <div
-    class="rounded-box border border-solid border-govex-border bg-base-100"
+    class="border border-solid border-govex-border bg-base-100"
     :class="title ? 'p-8' : 'p-6'"
   >
     <h2 v-if="title" class="mb-6 text-xl font-light">{{ title }}</h2>
