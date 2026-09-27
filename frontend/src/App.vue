@@ -15,7 +15,7 @@
         G
       </RouterLink>
       <div v-if="authStore.isAuthenticated" class="ml-auto flex items-center gap-3 px-6">
-        <span class="text-sm text-white">{{ authStore.user.username }}</span>
+        <span class="text-sm text-white">{{ authStore.displayName }}</span>
         <BaseButton
           variant="ghost"
           shape="square"

@@ -61,6 +61,12 @@
         />
         <span>{{ field.label }}</span>
       </label>
+      <template v-else-if="field.field_key === META_FIELDS.avatar">
+        <label class="label" :class="{ 'mt-2': index > 0 }" for="flow-avatar">
+          {{ field.label }}
+        </label>
+        <AvatarPicker id="flow-avatar" v-model="fields[field.field_key]" :choices="field.choices" />
+      </template>
       <template v-else>
         <label class="label" :class="{ 'mt-2': index > 0 }" :for="`flow-${field.field_key}`">
           {{ field.label }}
@@ -68,7 +74,7 @@
         <input
           :id="`flow-${field.field_key}`"
           v-model="fields[field.field_key]"
-          :type="inputType(field.type)"
+          :type="inputType(field)"
           :autocomplete="autocomplete(field)"
           :placeholder="field.placeholder"
           :required="field.required"
@@ -224,8 +230,9 @@
 
 <script>
 import QRCode from 'qrcode'
+import AvatarPicker from '@/components/AvatarPicker.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import { FlowRun, errorsByField } from '@/lib/authentik.js'
+import { FlowRun, META_FIELDS, errorsByField } from '@/lib/authentik.js'
 import { createCredential, getAssertion, isWebAuthnSupported } from '@/lib/webauthn.js'
 
 const METHOD_LABELS = {
@@ -241,7 +248,7 @@ const ALERT_CLASSES = {
 
 export default {
   name: 'FlowExecutor',
-  components: { BaseButton },
+  components: { AvatarPicker, BaseButton },
   props: {
     slug: { type: String, required: true },
     query: { type: String, default: '' },
@@ -251,6 +258,7 @@ export default {
   data() {
     return {
       ALERT_CLASSES,
+      META_FIELDS,
       METHOD_LABELS,
       challenge: null,
       method: null,
@@ -287,9 +295,9 @@ export default {
       const deviceClass = Object.keys(METHOD_LABELS).find((c) => metaModelName.includes(c))
       return METHOD_LABELS[deviceClass] ?? metaModelName
     },
-    inputType(type) {
-      if (type === 'username') return 'text'
-      return ['email', 'password', 'number', 'date'].includes(type) ? type : 'text'
+    inputType(field) {
+      if (field.field_key === META_FIELDS.birthdate) return 'date'
+      return ['email', 'password', 'number', 'date'].includes(field.type) ? field.type : 'text'
     },
     autocomplete(field) {
       if (field.type === 'username') return 'username'

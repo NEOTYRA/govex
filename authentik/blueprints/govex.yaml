@@ -513,6 +513,16 @@ entries:
         govex_id = request.user.attributes.get("govex_id")
         return {"govex_id": govex_id} if govex_id is not None else {}
 
+  - model: authentik_providers_oauth2.scopemapping
+    id: govex-meta-scope
+    identifiers:
+      name: govex-meta
+    attrs:
+      scope_name: govex_meta
+      description: Vorname, Nachname, Geburtsdatum und Profilbild
+      expression: |
+        return {"meta": request.user.attributes.get("settings", {}).get("meta", {})}
+
   - model: authentik_providers_oauth2.oauth2provider
     id: wintersehn-provider
     identifiers:
@@ -540,6 +550,7 @@ entries:
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
         - !KeyOf govex-scope
+        - !KeyOf govex-meta-scope
 
   - model: authentik_core.application
     identifiers:
