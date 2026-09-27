@@ -90,14 +90,38 @@ entries:
       target: !KeyOf consent-flow
       order: 10
 
+  # Written by write-consent-policy, see user_settings.py.
   - model: authentik_flows.flowstagebinding
+    state: absent
     identifiers:
       stage: !Find [authentik_stages_user_write.userwritestage, [name, govex-user-update]]
       target: !KeyOf consent-flow
-      order: 20
+
+  - model: authentik_policies_expression.expressionpolicy
+    id: write-consent-policy
+    identifiers:
+      name: govex-write-consent
+    attrs:
+      expression: !Format
+        - |
+          %s
+
+          write_settings(request.user, request.context.get("prompt_data", {}))
+          return True
+        - !File /blueprints/govex/user_settings.py
 
   - model: authentik_flows.flowstagebinding
+    id: consent-done-binding
     identifiers:
       stage: !Find [authentik_stages_redirect.redirectstage, [name, govex-profile-done]]
       target: !KeyOf consent-flow
       order: 30
+    attrs:
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+
+  - model: authentik_policies.policybinding
+    identifiers:
+      policy: !KeyOf write-consent-policy
+      target: !KeyOf consent-done-binding
+      order: 0

@@ -141,7 +141,8 @@ entries:
       expression: |
         from datetime import date
 
-        value = request.context.get("prompt_data", {}).get("attributes.settings.meta.birthdate") or ""
+        prompt_data = request.context.get("prompt_data", {})
+        value = prompt_data.get("attributes", {}).get("settings", {}).get("meta", {}).get("birthdate") or ""
         if not value.strip():
             return True
         try:
@@ -184,11 +185,32 @@ entries:
       target: !KeyOf meta-flow
       order: 10
 
+  # Written by write-meta-policy, see user_settings.py.
   - model: authentik_flows.flowstagebinding
+    state: absent
     identifiers:
       stage: !Find [authentik_stages_user_write.userwritestage, [name, govex-user-update]]
       target: !KeyOf meta-flow
-      order: 20
+
+  # Writes and notifies in one policy, so connected apps never get the old meta.
+  - model: authentik_policies_expression.expressionpolicy
+    id: write-meta-policy
+    identifiers:
+      name: govex-write-meta
+    attrs:
+      expression: !Format
+        - |
+          %s
+
+          %s
+
+          write_settings(request.user, request.context.get("prompt_data", {}))
+          failed = notify_connected_apps(request.user, "updated")
+          if failed:
+              ak_logger.warning("account update not delivered", apps=failed, user=request.user.username)
+          return True
+        - !File /blueprints/govex/user_settings.py
+        - !File /blueprints/govex/connected_apps.py
 
   - model: authentik_flows.flowstagebinding
     id: meta-done-binding
@@ -201,7 +223,13 @@ entries:
       re_evaluate_policies: true
 
   - model: authentik_policies.policybinding
+    state: absent
     identifiers:
       policy: !Find [authentik_policies_expression.expressionpolicy, [name, govex-notify-account-update]]
+      target: !KeyOf meta-done-binding
+
+  - model: authentik_policies.policybinding
+    identifiers:
+      policy: !KeyOf write-meta-policy
       target: !KeyOf meta-done-binding
       order: 0
