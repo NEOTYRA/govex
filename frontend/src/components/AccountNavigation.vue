@@ -5,7 +5,12 @@
   >
     <ul class="menu w-full gap-2 p-4">
       <li v-for="item in items" :key="item.name">
+        <div v-if="!authStore.ready" class="flex items-center gap-3 p-4">
+          <div class="skeleton size-5 shrink-0" />
+          <div class="skeleton h-4 w-24" />
+        </div>
         <RouterLink
+          v-else
           :to="{ name: item.name }"
           class="flex items-center gap-3 p-4 shadow-none"
           :class="{ 'bg-govex-highlight text-primary': $route.name === item.name }"
@@ -20,7 +25,12 @@
         </RouterLink>
       </li>
     </ul>
-    <div class="mt-auto w-full p-4">
+    <div v-if="!authStore.ready" class="mt-auto flex w-full flex-col gap-1 p-4">
+      <div class="skeleton h-3 w-20" />
+      <div class="skeleton mb-4 h-3 w-32" />
+      <div class="skeleton h-10 w-full" />
+    </div>
+    <div v-else class="mt-auto w-full p-4">
       <div class="mb-4 text-xs font-light text-govex-muted">
         <div>Version {{ version }}</div>
         <div>Created by NEOTYRA</div>

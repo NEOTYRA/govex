@@ -1,10 +1,11 @@
 <template>
-  <AccountPage title="Sicherheit">
+  <AccountPage title="Sicherheit" :loading="!authStore.ready">
     <FlowCard
       title="Passwort"
       :flow="FLOWS.passwordChange"
       action="Ändern"
       saved-message="Passwort geändert."
+      :loading="!authStore.ready"
     >
       <p>Mindestens 15 Zeichen. Bekannte, geleakte Passwörter werden abgelehnt.</p>
     </FlowCard>
@@ -14,11 +15,15 @@
       :flow="FLOWS.passkeyAdd"
       action="Hinzufügen"
       saved-message="Passkey hinzugefügt."
+      :loading="passkeysLoading"
       @done="loadPasskeys"
     >
       <p>Füge einen weiteren Passkey hinzu, z.B. für ein zweites Gerät.</p>
       <template #details>
-        <ul class="mt-4 flex flex-col gap-2">
+        <ul v-if="passkeysLoading" class="mt-4 flex flex-col gap-2">
+          <li v-for="row in 2" :key="row" class="skeleton h-14 w-full rounded-field" />
+        </ul>
+        <ul v-else class="mt-4 flex flex-col gap-2">
           <li
             v-for="passkey in passkeys"
             :key="passkey.pk"
@@ -72,6 +77,7 @@
       :flow="FLOWS.totpAdd"
       action="Einrichten"
       saved-message="Authenticator-App eingerichtet."
+      :loading="authenticatorsLoading"
       @done="loadAuthenticators"
     >
       <p v-if="totpDevices.length">
@@ -92,6 +98,7 @@
       button-variant="error"
       button-outline
       :error="lockdownError"
+      :loading="!authStore.ready"
       @open="lockdownError = ''"
       @done="onLockedDown"
     >
@@ -109,6 +116,7 @@
       saved-message=""
       button-variant="error"
       :error="deleteError"
+      :loading="!authStore.ready"
       @open="deleteError = ''"
       @done="onDeleted"
     >
@@ -134,8 +142,10 @@ export default {
     return {
       FLOWS,
       passkeys: [],
+      passkeysLoading: true,
       passkeysError: '',
       authenticators: [],
+      authenticatorsLoading: true,
       renaming: null,
       newName: '',
       renameError: '',
@@ -163,6 +173,8 @@ export default {
         this.passkeysError = ''
       } catch (err) {
         this.passkeysError = err.message
+      } finally {
+        this.passkeysLoading = false
       }
     },
     async loadAuthenticators() {
@@ -170,6 +182,8 @@ export default {
         this.authenticators = await fetchAuthenticators()
       } catch (err) {
         this.passkeysError = err.message
+      } finally {
+        this.authenticatorsLoading = false
       }
     },
     passkeyName(passkey) {
