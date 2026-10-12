@@ -7,6 +7,14 @@ APPS = [
             "updated": "GOVEX_WINTERSEHN_ACCOUNT_UPDATED_URL",
         },
     ),
+    (
+        "swissfy",
+        "GOVEX_SWISSFY_CLIENT_ID",
+        {
+            "deleted": "GOVEX_SWISSFY_ACCOUNT_DELETED_URL",
+            "updated": "GOVEX_SWISSFY_ACCOUNT_UPDATED_URL",
+        },
+    ),
 ]
 
 
