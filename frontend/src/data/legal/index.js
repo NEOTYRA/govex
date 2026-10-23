@@ -14,3 +14,5 @@ export const contracts = neotyra
 export const WINTERSEHN_URL = import.meta.env.DEV
   ? 'http://localhost:5173'
   : 'https://wintersehn.ch'
+
+export const SWISSFY_URL = import.meta.env.DEV ? 'http://localhost:5175' : 'https://swissfy.ch'

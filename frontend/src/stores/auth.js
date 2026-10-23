@@ -15,9 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (!user.value) return null
     return CONSENT_PAGES.find((page) => !consent.value[page]) ?? null
   })
-  const wintersehnAttestation = computed(
-    () => user.value?.settings?.attestations?.wintersehn ?? null,
-  )
+  const attestations = computed(() => user.value?.settings?.attestations ?? {})
 
   function hasConsented(page) {
     return Boolean(consent.value[page])
@@ -61,7 +59,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     displayName,
     missingConsent,
-    wintersehnAttestation,
+    attestations,
     hasConsented,
     fetchMe,
     logout,

@@ -26,18 +26,19 @@ entries:
     attrs:
       expression: !Format
         - |
-          WINTERSEHN_KEYS = """%s"""
+          KEYS = {"wintersehn": """%s""", "swissfy": """%s"""}
 
           %s
 
           token = request.context.get("prompt_data", {}).get("attestation") or ""
-          error = store_wintersehn_attestation(token)
+          error = store_attestation(token, KEYS)
           if error:
               ak_message(error)
               return False
           return True
         - !Env [GOVEX_WINTERSEHN_CONSENT_KEY, ""]
-        - !File /blueprints/govex/wintersehn_attestation.py
+        - !Env [GOVEX_SWISSFY_CONSENT_KEY, ""]
+        - !File /blueprints/govex/attestation.py
 
   - model: authentik_stages_prompt.promptstage
     id: attestation-prompt
