@@ -1,6 +1,7 @@
-def store_wintersehn_attestation(token):
-    """Stores a consent status wintersehn signed (ES256) on the govex account
-    it names. Returns an error message, or None when it was stored."""
+def store_attestation(token):
+    """Stores a consent status a connected app signed (ES256) on the govex
+    account it names, under the app's name. Returns an error message, or None
+    when it was stored."""
     import base64
     import json
 
@@ -25,14 +26,15 @@ def store_wintersehn_attestation(token):
         raw = decode(signature)
     except ValueError:
         return "Ungültiger Vertragsstatus."
-    if len(raw) != 64 or payload.get("iss") != "wintersehn":
+    app = payload.get("iss")
+    if len(raw) != 64 or app not in CONSENT_KEYS:
         return "Ungültiger Vertragsstatus."
 
     der = encode_dss_signature(int.from_bytes(raw[:32], "big"), int.from_bytes(raw[32:], "big"))
     message = f"{header}.{body}".encode()
     marker = "-----END PUBLIC KEY-----"
     verified = False
-    for block in WINTERSEHN_KEYS.replace("\\n", "\n").split(marker)[:-1]:
+    for block in CONSENT_KEYS[app].replace("\\n", "\n").split(marker)[:-1]:
         key = serialization.load_pem_public_key((block.strip() + "\n" + marker).encode())
         try:
             key.verify(der, message, ec.ECDSA(hashes.SHA256()))
@@ -41,14 +43,14 @@ def store_wintersehn_attestation(token):
         except InvalidSignature:
             continue
     if not verified:
-        return "Der Vertragsstatus ist nicht von wintersehn signiert."
+        return f"Der Vertragsstatus ist nicht von {app} signiert."
 
     user = User.objects.filter(uuid=payload.get("sub")).first()
     if user is None:
         return "Unbekanntes Konto."
     attestations = user.attributes.setdefault("settings", {}).setdefault("attestations", {})
-    if payload_of(attestations.get("wintersehn")).get("iat", 0) >= payload.get("iat", 0):
+    if payload_of(attestations.get(app)).get("iat", 0) >= payload.get("iat", 0):
         return "Ein neuerer Vertragsstatus ist bereits gespeichert."
-    attestations["wintersehn"] = token
+    attestations[app] = token
     user.save(update_fields=["attributes"])
     return None
