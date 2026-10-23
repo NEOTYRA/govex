@@ -95,7 +95,7 @@ entries:
       device_classes:
         - webauthn
         - totp
-      not_configured_action: configure
+      not_configured_action: !Env [GOVEX_MFA_NOT_CONFIGURED_ACTION, configure]
       configuration_stages:
         - !KeyOf webauthn-setup
         - !KeyOf totp-setup

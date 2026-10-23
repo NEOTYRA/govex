@@ -44,6 +44,10 @@
         wintersehn signierten Status.
       </p>
     </section>
+
+    <p v-if="monolithLinked" class="text-[0.65rem] text-govex-muted">
+      Dieses Konto ist mit Monolith verknüpft.
+    </p>
   </AccountPage>
 </template>
 
@@ -68,6 +72,7 @@ export default {
       wintersehnChecked: false,
       wintersehnInvalid: false,
       wintersehnConsent: {},
+      monolithLinked: false,
       WINTERSEHN_URL,
     }
   },
@@ -90,6 +95,7 @@ export default {
       const payload = token ? await verifyAttestation(token) : null
       this.wintersehnInvalid = Boolean(token) && !payload
       this.wintersehnConsent = payload?.consent ?? {}
+      this.monolithLinked = payload?.monolith === true
       this.wintersehnChecked = true
     },
   },

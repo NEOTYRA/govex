@@ -94,6 +94,8 @@ services:
       AUTHENTIK_BOOTSTRAP_EMAIL: admin@govex.ch
       AUTHENTIK_BOOTSTRAP_PASSWORD: admin
       AUTHENTIK_BOOTSTRAP_TOKEN: govex-dev-bootstrap-token
+      # Local dev only: accounts without a second factor are not forced to set one up.
+      GOVEX_MFA_NOT_CONFIGURED_ACTION: skip
       GOVEX_WINTERSEHN_CLIENT_ID: wintersehn-dev
       GOVEX_WINTERSEHN_CLIENT_SECRET: wintersehn-dev-secret
       GOVEX_WINTERSEHN_REDIRECT_URI: http://localhost:8000/api/auth/oidc/callback/
