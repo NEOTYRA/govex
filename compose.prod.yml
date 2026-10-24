@@ -100,6 +100,7 @@ services:
       GOVEX_MIGRATION_TOKEN: ${GOVEX_MIGRATION_TOKEN:-}
       GOVEX_WINTERSEHN_CONSENT_KEY: ${WINTERSEHN_CONSENT_KEY:?see .env.example}
       GOVEX_SWISSFY_CONSENT_KEY: ${SWISSFY_CONSENT_KEY:?see .env.example}
+      GOVEX_MONOLITH_TOKEN: ${MONOLITH_TOKEN:-}
 
     depends_on:
       authentik-db:

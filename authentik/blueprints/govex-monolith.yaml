@@ -1,0 +1,35 @@
+version: 1
+metadata:
+  name: govex - monolith
+entries:
+  - model: authentik_rbac.role
+    id: monolith-role
+    state: !If [!Env [GOVEX_MONOLITH_TOKEN, ""], present, absent]
+    identifiers:
+      name: govex-monolith
+    attrs:
+      permissions:
+        - authentik_core.view_user
+
+  - model: authentik_core.user
+    id: monolith-user
+    state: !If [!Env [GOVEX_MONOLITH_TOKEN, ""], present, absent]
+    identifiers:
+      username: govex-monolith
+    attrs:
+      name: govex monolith
+      type: service_account
+      path: govex/service-accounts
+      roles:
+        - !KeyOf monolith-role
+
+  - model: authentik_core.token
+    state: !If [!Env [GOVEX_MONOLITH_TOKEN, ""], present, absent]
+    identifiers:
+      identifier: govex-monolith
+    attrs:
+      user: !KeyOf monolith-user
+      intent: api
+      key: !Env [GOVEX_MONOLITH_TOKEN, ""]
+      expiring: false
+      description: Lets wintersehn's monolith look up accounts to link dossiers. Read only.
