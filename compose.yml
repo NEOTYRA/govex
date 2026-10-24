@@ -111,6 +111,7 @@ services:
       GOVEX_WINTERSEHN_CONSENT_KEY: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENxmoshNKpLzwHguCn1ws/W93dQ2p\nEPm4ppwG7MIsab6MSgAhTfDNgzo8AwycUhHdju4ShCzPfERtoWR2eBO3Tw==\n-----END PUBLIC KEY-----"
       # Public key matching the dev key in swissfy's compose.yml.
       GOVEX_SWISSFY_CONSENT_KEY: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEyWO92zolnelVEJbDCEIcDkfMFwoj\nEhBKw2ZThihIbj+wRSkiWLOUL/s/MPPErgs1cbFOQaASXXNJpQQbWLld5Q==\n-----END PUBLIC KEY-----"
+      GOVEX_MONOLITH_TOKEN: monolith-dev-govex-token
       AUTHENTIK_EMAIL__HOST: mailpit
       AUTHENTIK_EMAIL__PORT: 1025
       AUTHENTIK_EMAIL__USE_TLS: "false"
